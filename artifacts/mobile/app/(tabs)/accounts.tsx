@@ -14,6 +14,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AccountCard } from "@/components/AccountCard";
 import { ConnectAccountSheet } from "@/components/ConnectAccountSheet";
 import { EmptyState } from "@/components/EmptyState";
+import { RadarLoader } from "@/components/RadarLoader";
+import { RadarSpinner } from "@/components/RadarSpinner";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { useInbox } from "@/context/InboxContext";
 import { useColors } from "@/hooks/useColors";
@@ -29,6 +31,7 @@ export default function AccountsScreen() {
     connectAccount,
     disconnectAccount,
     reconnectAccount,
+    settings,
   } = useInbox();
   const [sheetProvider, setSheetProvider] = useState<Provider | null>(null);
 
@@ -65,6 +68,25 @@ export default function AccountsScreen() {
         contentContainerStyle={[styles.scroll, { paddingBottom: bottomPad }]}
         showsVerticalScrollIndicator={false}
       >
+        {accounts.length > 0 ? (
+          <View
+            style={[
+              styles.scanRow,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+          >
+            <RadarSpinner
+              size={18}
+              color={colors.softCyan}
+              reducedMotion={settings.reducedMotion}
+            />
+            <Text style={[styles.scanText, { color: colors.coolGrey }]}>
+              {`Live scan · ${accounts.length} source${accounts.length === 1 ? "" : "s"} on radar`}
+            </Text>
+            <View style={[styles.liveDot, { backgroundColor: colors.softCyan }]} />
+          </View>
+        ) : null}
+
         <View style={styles.connectGrid}>
           <ConnectButton
             provider="gmail"
@@ -116,11 +138,12 @@ export default function AccountsScreen() {
         ) : null}
 
         {accounts.length === 0 ? (
-          <EmptyState
-            icon="users"
-            title="No sources yet"
-            message="Connect Gmail, Outlook, or Instagram to start receiving unified signals."
-          />
+          <View style={styles.emptyWrap}>
+            <RadarLoader
+              size="md"
+              message="Waiting for your first source — connect one above to start scanning."
+            />
+          </View>
         ) : (
           accounts.map((account) => (
             <AccountCard
@@ -143,7 +166,7 @@ export default function AccountsScreen() {
                       <Feather
                         name="refresh-cw"
                         size={16}
-                        color={colors.radarGreen}
+                        color={colors.radarBlue}
                       />
                     </Pressable>
                   ) : null}
@@ -181,7 +204,7 @@ export default function AccountsScreen() {
             <View
               style={[styles.infoIcon, { backgroundColor: colors.secondary }]}
             >
-              <Feather name="lock" size={16} color={colors.radarGreen} />
+              <Feather name="lock" size={16} color={colors.softCyan} />
             </View>
             <Text style={[styles.infoTitle, { color: colors.foreground }]}>
               How connections work
@@ -319,5 +342,33 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_500Medium",
     fontSize: 13,
     lineHeight: 19,
+  },
+  scanRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 999,
+    borderWidth: 1,
+    marginBottom: 14,
+    alignSelf: "flex-start",
+  },
+  scanText: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 12,
+    letterSpacing: 0.3,
+  },
+  liveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    shadowColor: "#56CCF2",
+    shadowOpacity: 0.9,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  emptyWrap: {
+    paddingVertical: 8,
   },
 });

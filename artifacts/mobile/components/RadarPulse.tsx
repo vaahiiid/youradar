@@ -92,7 +92,7 @@ export function RadarPulse({
               StyleSheet.absoluteFillObject,
               styles.ring,
               {
-                borderColor: colors.radarGreen,
+                borderColor: colors.radarBlue,
                 opacity: reducedMotion ? 0.3 : opacity,
                 transform: [{ scale: reducedMotion ? 0.85 : scale }],
                 borderRadius: size / 2,
@@ -106,7 +106,7 @@ export function RadarPulse({
         style={[
           StyleSheet.absoluteFillObject,
           styles.staticRing,
-          { borderColor: "rgba(57, 255, 136, 0.25)", borderRadius: size / 2 },
+          { borderColor: "rgba(86, 204, 242, 0.28)", borderRadius: size / 2 },
         ]}
       />
       <View
@@ -116,7 +116,7 @@ export function RadarPulse({
             width: size * 0.7,
             height: size * 0.7,
             borderRadius: (size * 0.7) / 2,
-            borderColor: "rgba(57, 255, 136, 0.18)",
+            borderColor: "rgba(86, 204, 242, 0.22)",
             top: size * 0.15,
             left: size * 0.15,
           },
@@ -129,7 +129,7 @@ export function RadarPulse({
             width: size * 0.4,
             height: size * 0.4,
             borderRadius: (size * 0.4) / 2,
-            borderColor: "rgba(57, 255, 136, 0.22)",
+            borderColor: "rgba(47, 128, 237, 0.28)",
             top: size * 0.3,
             left: size * 0.3,
           },
@@ -151,8 +151,8 @@ export function RadarPulse({
                 height: 2,
                 left: size / 2,
                 top: size / 2 - 1,
-                backgroundColor: colors.radarGreen,
-                shadowColor: colors.radarGreen,
+                backgroundColor: colors.softCyan,
+                shadowColor: colors.softCyan,
               },
             ]}
           />
@@ -177,8 +177,8 @@ export function RadarPulse({
           {
             top: size * 0.25,
             left: size * 0.7,
-            backgroundColor: colors.radarGreen,
-            shadowColor: colors.radarGreen,
+            backgroundColor: colors.softCyan,
+            shadowColor: colors.softCyan,
           },
         ]}
       />
@@ -188,9 +188,9 @@ export function RadarPulse({
           {
             top: size * 0.6,
             left: size * 0.18,
-            backgroundColor: colors.radarGreen,
-            opacity: 0.7,
-            shadowColor: colors.radarGreen,
+            backgroundColor: colors.radarBlue,
+            opacity: 0.85,
+            shadowColor: colors.radarBlue,
           },
         ]}
       />
@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
   },
   sweepWedge: {
     position: "absolute",
-    backgroundColor: "rgba(57, 255, 136, 0.08)",
+    backgroundColor: "rgba(86, 204, 242, 0.10)",
   },
   signalDot: {
     position: "absolute",

@@ -1,0 +1,93 @@
+Update the existing YourRadar app design and loading system.
+
+Important:
+Do not rebuild the app from scratch. Fix the current implementation.
+
+I attached the logo before, but it was not added properly. I am attaching the logo again. Please use the attached logo throughout the app.
+
+Main changes:
+
+1. Logo usage
+- Add the attached logo properly.
+- Use it in the startup loading screen.
+- Use it in the sidebar/header branding.
+- Use it on the login/signup pages.
+- Use it in empty states where suitable.
+- Make sure the logo is actually imported from the attached asset and rendered in the UI.
+- Do not replace it with text-only branding.
+
+2. Radar design direction
+The radar concept looks great. Please use it more across the app.
+
+Use radar-style elements for:
+- Startup loading screen
+- Page loading states
+- Button loading states
+- Data fetching/loading skeletons
+- Empty states
+- Notification scanning states
+- Account connection loading states
+
+Radar elements can include:
+- circular radar rings
+- scanning sweep animation
+- pulsing dots
+- signal waves
+- subtle grid/scan background
+- animated orbit points
+- soft glow effects
+
+3. Loading system
+Every loading state in the app should feel consistent with the radar concept.
+
+Replace generic spinners with branded radar loaders.
+
+Examples:
+- Full-page loader: large radar animation with logo in the centre
+- Small inline loader: mini radar sweep icon
+- Button loader: small animated radar dot/sweep
+- Skeleton loader: subtle scan-line animation
+- Dashboard loading: radar scanning effect with “Scanning your signals...”
+
+4. Remove the bright green colour
+The current bright green makes the design look bad. Remove the neon/bright green from the UI.
+
+Replace it with a more premium colour palette.
+
+Use this updated palette:
+- Deep Navy: #0B1020
+- Electric Blue: #2F80ED
+- Soft Cyan: #56CCF2
+- Violet Accent: #8B5CF6
+- Cool Grey: #A7B0C0
+- Off White: #F7F9FC
+- Notification Red: #FF3B30
+
+Use Electric Blue and Soft Cyan instead of the previous bright green.
+
+Design direction:
+- Premium dark navy base
+- Blue/cyan radar glow
+- Violet only as a subtle accent
+- Red only for unread/new notification badges
+- Avoid bright green completely
+
+5. Startup loading screen
+Improve the startup loading screen:
+- Dark navy background
+- Attached logo in the centre
+- Animated radar rings around the logo
+- Blue/cyan rotating radar sweep
+- Animated percentage from 0% to 100%
+- Stylish progress indicator
+- Bottom text: “powered by you group”
+- Smooth fade into dashboard after loading completes
+
+6. Acceptance criteria
+This update is complete only when:
+- The attached logo is visible in the app.
+- The logo appears inside the radar loading screen.
+- Bright green is removed from the UI.
+- Radar animations are used for all main loading states.
+- The startup loading screen feels polished and branded.
+- The app still works normally after the design update.

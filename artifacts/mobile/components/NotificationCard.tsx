@@ -42,7 +42,7 @@ export function NotificationCard({ item, onPress }: NotificationCardProps) {
         styles.card,
         {
           backgroundColor: colors.card,
-          borderColor: item.isSeen ? colors.border : colors.radarGreen,
+          borderColor: item.isSeen ? colors.border : colors.radarBlue,
           borderWidth: item.isSeen ? 1 : 1.5,
           opacity: pressed ? 0.85 : 1,
         },

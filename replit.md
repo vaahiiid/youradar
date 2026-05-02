@@ -19,15 +19,17 @@ This monorepo contains:
 
 ## Brand system
 
-| Token             | Hex       | Use                              |
-|-------------------|-----------|----------------------------------|
-| Deep Navy         | `#0B1020` | Primary background               |
-| Radar Green       | `#39FF88` | Primary accent / CTAs / radar    |
-| Cool Grey         | `#A7B0C0` | Secondary text                   |
-| Off White         | `#F7F9FC` | Foreground / on-dark text        |
-| Notification Red  | `#FF3B30` | Unread / urgent badges only      |
+| Token             | Hex       | Use                                                |
+|-------------------|-----------|----------------------------------------------------|
+| Deep Navy         | `#0B1020` | Primary background                                 |
+| Electric Blue     | `#2F80ED` | Primary accent / CTAs / radar rings / active state |
+| Soft Cyan         | `#56CCF2` | Sweep + signal-dot glow / "live scan" indicators   |
+| Violet Accent     | `#8B5CF6` | Secondary highlight (reserved)                     |
+| Cool Grey         | `#A7B0C0` | Secondary text                                     |
+| Off White         | `#F7F9FC` | Foreground / on-dark text                          |
+| Notification Red  | `#FF3B30` | Unread / urgent badges only                        |
 
-Tokens live in `artifacts/mobile/constants/colors.ts`. The mobile app is dark-only by design.
+Tokens live in `artifacts/mobile/constants/colors.ts` (exposed as `radarBlue`, `softCyan`, `violetAccent`, `coolGrey`, `offWhite`, `brandNavy`, `notificationRed`). The mobile app is dark-only by design. The previous bright-green palette (`#39FF88`) has been fully removed.
 
 ### Logo
 
@@ -45,15 +47,16 @@ The wordmark is composed onto a frosted badge inside the radar pulse on the load
 
 ## Loading experience
 
-The custom radar startup screen lives in `artifacts/mobile/components/LoadingScreen.tsx`:
+All loading / scanning UI in the app is radar-themed and uses the blue/cyan palette:
 
-- Deep navy full-screen background
-- Animated radar rings, rotating sweep line, and signal dots (`RadarPulse.tsx`)
-- Wordmark inside a glowing centre badge
-- Animated 0–100% counter and a glowing progress bar
-- "powered by you group" footer in lowercase tracking
-- Honors `AccessibilityInfo.isReduceMotionEnabled()` and the in-app **Reduced motion** toggle in Settings → animations are stilled and a static fallback is shown
-- Fades into the dashboard at 100%
+- **`LoadingScreen.tsx`** — full-screen startup with `RadarPulse` rings, rotating sweep, glowing wordmark badge, and an animated 0–100% progress bar (electric-blue fill + soft-cyan glow). Honors `AccessibilityInfo.isReduceMotionEnabled()` and the Settings → Reduced motion toggle.
+- **`RadarPulse.tsx`** — concentric pulsing rings + rotating sweep + signal dots. Used in hero, empty states, and the full RadarLoader.
+- **`RadarLoader.tsx`** — full radar + centred wordmark badge + custom message ("Scanning your signals…"). Has `sm` / `md` / `lg` size presets. Used as the empty state on Sources before the first account is connected.
+- **`RadarSpinner.tsx`** — small inline radar sweep (default 18 px) for inline / button loaders. Used in the bottom-sheet **Connect** button (replaces "Connect" with a spinner + "Connecting…" while the simulated OAuth runs) and inside the "Live scan" pills on Alerts and Sources.
+- **`ScanSkeleton.tsx`** — animated scan-line skeleton card. Three skeletons render briefly on the Alerts tab during the initial mount before the notification list appears.
+- **`EmptyState.tsx`** — defaults to the `radar` variant (mini RadarPulse + wordmark badge); pass `variant="icon"` for a Feather-icon style state.
+
+All five components honor the in-app Reduced motion setting via `useInbox().settings.reducedMotion`.
 
 ## PWA / installable web app
 

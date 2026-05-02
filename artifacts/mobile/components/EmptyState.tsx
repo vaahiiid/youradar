@@ -2,26 +2,55 @@ import { Feather } from "@expo/vector-icons";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 
+import { BrandLogo } from "@/components/BrandLogo";
+import { RadarPulse } from "@/components/RadarPulse";
 import { useColors } from "@/hooks/useColors";
+import { useInbox } from "@/context/InboxContext";
 
 interface EmptyStateProps {
   icon?: keyof typeof Feather.glyphMap;
   title: string;
   message?: string;
+  variant?: "radar" | "icon";
 }
 
-export function EmptyState({ icon = "inbox", title, message }: EmptyStateProps) {
+export function EmptyState({
+  icon = "inbox",
+  title,
+  message,
+  variant = "radar",
+}: EmptyStateProps) {
   const colors = useColors();
+  const { settings } = useInbox();
+
   return (
     <View style={styles.wrap}>
-      <View
-        style={[
-          styles.iconWrap,
-          { backgroundColor: colors.secondary, borderColor: colors.border },
-        ]}
-      >
-        <Feather name={icon} size={28} color={colors.primary} />
-      </View>
+      {variant === "radar" ? (
+        <View style={styles.radarStack}>
+          <RadarPulse size={140} rings={3} reducedMotion={settings.reducedMotion} />
+          <View
+            style={[
+              styles.logoBadge,
+              {
+                backgroundColor: "rgba(20, 26, 48, 0.78)",
+                borderColor: "rgba(47, 128, 237, 0.45)",
+              },
+            ]}
+            pointerEvents="none"
+          >
+            <BrandLogo height={14} tintColor={colors.offWhite} />
+          </View>
+        </View>
+      ) : (
+        <View
+          style={[
+            styles.iconWrap,
+            { backgroundColor: colors.secondary, borderColor: colors.border },
+          ]}
+        >
+          <Feather name={icon} size={28} color={colors.primary} />
+        </View>
+      )}
       <Text style={[styles.title, { color: colors.foreground }]}>{title}</Text>
       {message ? (
         <Text style={[styles.message, { color: colors.mutedForeground }]}>
@@ -36,9 +65,23 @@ const styles = StyleSheet.create({
   wrap: {
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 40,
+    paddingVertical: 32,
     paddingHorizontal: 24,
     gap: 10,
+  },
+  radarStack: {
+    width: 140,
+    height: 140,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 6,
+  },
+  logoBadge: {
+    position: "absolute",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 10,
+    borderWidth: 1,
   },
   iconWrap: {
     width: 64,

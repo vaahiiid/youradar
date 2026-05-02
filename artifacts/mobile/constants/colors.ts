@@ -1,6 +1,6 @@
 const navy = {
   text: "#F7F9FC",
-  tint: "#39FF88",
+  tint: "#2F80ED",
 
   background: "#0B1020",
   foreground: "#F7F9FC",
@@ -9,7 +9,7 @@ const navy = {
   cardForeground: "#F7F9FC",
   surfaceElevated: "#1A2140",
 
-  primary: "#39FF88",
+  primary: "#2F80ED",
   primaryForeground: "#0B1020",
 
   secondary: "#1A2140",
@@ -19,7 +19,7 @@ const navy = {
   mutedForeground: "#A7B0C0",
 
   accent: "#1A2140",
-  accentForeground: "#39FF88",
+  accentForeground: "#2F80ED",
 
   destructive: "#FF3B30",
   destructiveForeground: "#FFFFFF",
@@ -30,11 +30,13 @@ const navy = {
   gmail: "#EA4335",
   outlook: "#0A66C2",
   instagram: "#E1306C",
-  success: "#39FF88",
+  success: "#2F80ED",
   warning: "#F5A524",
 
   brandNavy: "#0B1020",
-  radarGreen: "#39FF88",
+  radarBlue: "#2F80ED",
+  softCyan: "#56CCF2",
+  violetAccent: "#8B5CF6",
   coolGrey: "#A7B0C0",
   offWhite: "#F7F9FC",
   notificationRed: "#FF3B30",

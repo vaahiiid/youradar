@@ -1,5 +1,5 @@
 import { Feather } from "@expo/vector-icons";
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   KeyboardAvoidingView,
   Modal,
@@ -12,7 +12,9 @@ import {
 } from "react-native";
 
 import { ProviderIcon } from "@/components/ProviderIcon";
+import { RadarSpinner } from "@/components/RadarSpinner";
 import { useColors } from "@/hooks/useColors";
+import { useInbox } from "@/context/InboxContext";
 import type { ConnectedAccount, Provider } from "@/types";
 
 interface ConnectAccountSheetProps {
@@ -39,9 +41,31 @@ export function ConnectAccountSheet({
   onConnect,
 }: ConnectAccountSheetProps) {
   const colors = useColors();
+  const { settings } = useInbox();
   const [value, setValue] = useState("");
   const [kind, setKind] =
     useState<ConnectedAccount["instagramKind"]>("creator");
+  const [connecting, setConnecting] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!visible) {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+      setConnecting(false);
+    }
+  }, [visible]);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, []);
 
   const reset = () => {
     setValue("");
@@ -49,6 +73,7 @@ export function ConnectAccountSheet({
   };
 
   const handleClose = () => {
+    if (connecting) return;
     reset();
     onClose();
   };
@@ -60,14 +85,22 @@ export function ConnectAccountSheet({
     : value.trim().includes("@");
 
   const handleConnect = () => {
-    if (!provider || !isValid) return;
-    onConnect(
-      provider,
-      value.trim(),
-      isInstagram ? { instagramKind: kind } : undefined,
-    );
-    reset();
-    onClose();
+    if (!provider || !isValid || connecting) return;
+    setConnecting(true);
+    const submittedProvider = provider;
+    const submittedValue = value.trim();
+    const submittedKind = kind;
+    timerRef.current = setTimeout(() => {
+      timerRef.current = null;
+      onConnect(
+        submittedProvider,
+        submittedValue,
+        isInstagram ? { instagramKind: submittedKind } : undefined,
+      );
+      reset();
+      setConnecting(false);
+      onClose();
+    }, 750);
   };
 
   if (!provider) return null;
@@ -126,7 +159,7 @@ export function ConnectAccountSheet({
                 { backgroundColor: colors.secondary, borderColor: colors.border },
               ]}
             >
-              <Feather name="shield" size={14} color={colors.radarGreen} />
+              <Feather name="shield" size={14} color={colors.softCyan} />
               <Text style={[styles.noteText, { color: colors.secondaryForeground }]}>
                 {isInstagram
                   ? "Instagram monitoring works through official Meta APIs and may require a professional Instagram account and Meta app permissions. In production this opens secure Meta OAuth."
@@ -177,9 +210,9 @@ export function ConnectAccountSheet({
                           styles.kindChip,
                           {
                             backgroundColor: active
-                              ? colors.radarGreen
+                              ? colors.radarBlue
                               : colors.background,
-                            borderColor: active ? colors.radarGreen : colors.border,
+                            borderColor: active ? colors.radarBlue : colors.border,
                             opacity: pressed ? 0.85 : 1,
                           },
                         ]}
@@ -224,21 +257,36 @@ export function ConnectAccountSheet({
               </Pressable>
               <Pressable
                 onPress={handleConnect}
-                disabled={!isValid}
+                disabled={!isValid || connecting}
                 style={({ pressed }) => [
                   styles.button,
                   styles.primaryBtn,
                   {
-                    backgroundColor: colors.radarGreen,
+                    backgroundColor: colors.radarBlue,
                     opacity: !isValid ? 0.5 : pressed ? 0.85 : 1,
                   },
                 ]}
               >
-                <Text
-                  style={[styles.buttonText, { color: colors.brandNavy }]}
-                >
-                  Connect
-                </Text>
+                {connecting ? (
+                  <View style={styles.connectingRow}>
+                    <RadarSpinner
+                      size={16}
+                      color={colors.brandNavy}
+                      reducedMotion={settings.reducedMotion}
+                    />
+                    <Text
+                      style={[styles.buttonText, { color: colors.brandNavy }]}
+                    >
+                      Connecting...
+                    </Text>
+                  </View>
+                ) : (
+                  <Text
+                    style={[styles.buttonText, { color: colors.brandNavy }]}
+                  >
+                    Connect
+                  </Text>
+                )}
               </Pressable>
             </View>
           </Pressable>
@@ -347,5 +395,10 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 15,
     fontFamily: "Inter_700Bold",
+  },
+  connectingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
 });

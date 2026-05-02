@@ -52,7 +52,7 @@ function ClassicTabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: colors.radarGreen,
+        tabBarActiveTintColor: colors.radarBlue,
         tabBarInactiveTintColor: colors.coolGrey,
         headerShown: false,
         sceneStyle: { backgroundColor: colors.background },

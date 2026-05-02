@@ -83,7 +83,7 @@ export default function SettingsScreen() {
             <Switch
               value={settings.pushEnabled}
               onValueChange={(v) => updateSettings({ pushEnabled: v })}
-              trackColor={{ true: colors.radarGreen, false: colors.border }}
+              trackColor={{ true: colors.radarBlue, false: colors.border }}
               thumbColor={Platform.OS === "android" ? colors.brandNavy : "#FFFFFF"}
             />
           </Row>
@@ -92,7 +92,7 @@ export default function SettingsScreen() {
             <Switch
               value={settings.inAppToastsEnabled}
               onValueChange={(v) => updateSettings({ inAppToastsEnabled: v })}
-              trackColor={{ true: colors.radarGreen, false: colors.border }}
+              trackColor={{ true: colors.radarBlue, false: colors.border }}
               thumbColor={Platform.OS === "android" ? colors.brandNavy : "#FFFFFF"}
             />
           </Row>
@@ -101,7 +101,7 @@ export default function SettingsScreen() {
             <Switch
               value={settings.soundsEnabled}
               onValueChange={(v) => updateSettings({ soundsEnabled: v })}
-              trackColor={{ true: colors.radarGreen, false: colors.border }}
+              trackColor={{ true: colors.radarBlue, false: colors.border }}
               thumbColor={Platform.OS === "android" ? colors.brandNavy : "#FFFFFF"}
             />
           </Row>
@@ -110,7 +110,7 @@ export default function SettingsScreen() {
             <Switch
               value={settings.reducedMotion}
               onValueChange={(v) => updateSettings({ reducedMotion: v })}
-              trackColor={{ true: colors.radarGreen, false: colors.border }}
+              trackColor={{ true: colors.radarBlue, false: colors.border }}
               thumbColor={Platform.OS === "android" ? colors.brandNavy : "#FFFFFF"}
             />
           </Row>
@@ -228,7 +228,7 @@ function Row({
   return (
     <View style={styles.row}>
       <View style={[styles.rowIcon, { backgroundColor: colors.secondary }]}>
-        <Feather name={icon} size={16} color={colors.radarGreen} />
+        <Feather name={icon} size={16} color={colors.radarBlue} />
       </View>
       <View style={{ flex: 1 }}>
         <Text style={[styles.rowTitle, { color: colors.foreground }]}>{title}</Text>
@@ -281,7 +281,7 @@ function ActionRow({
         <Feather
           name={icon}
           size={16}
-          color={destructive ? colors.destructive : colors.radarGreen}
+          color={destructive ? colors.destructive : colors.radarBlue}
         />
       </View>
       <View style={{ flex: 1 }}>

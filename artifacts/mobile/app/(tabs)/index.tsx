@@ -151,7 +151,7 @@ export default function DashboardScreen() {
       >
         <LinearGradient
           colors={["#0F1830", "#0B1020"]}
-          style={[styles.heroCard, { borderColor: "rgba(57,255,136,0.18)" }]}
+          style={[styles.heroCard, { borderColor: "rgba(47,128,237,0.22)" }]}
         >
           <View style={styles.heroLeft}>
             <Text style={[styles.heroLabel, { color: colors.coolGrey }]}>
@@ -252,7 +252,7 @@ export default function DashboardScreen() {
             onPress={() => router.push("/(tabs)/accounts")}
             hitSlop={10}
           >
-            <Text style={[styles.link, { color: colors.radarGreen }]}>
+            <Text style={[styles.link, { color: colors.radarBlue }]}>
               Manage
             </Text>
           </Pressable>
@@ -270,7 +270,7 @@ export default function DashboardScreen() {
               },
             ]}
           >
-            <Feather name="plus-circle" size={20} color={colors.radarGreen} />
+            <Feather name="plus-circle" size={20} color={colors.radarBlue} />
             <Text style={[styles.emptyAccountsText, { color: colors.foreground }]}>
               Connect your first source
             </Text>
@@ -293,7 +293,7 @@ export default function DashboardScreen() {
             onPress={() => router.push("/(tabs)/notifications")}
             hitSlop={10}
           >
-            <Text style={[styles.link, { color: colors.radarGreen }]}>
+            <Text style={[styles.link, { color: colors.radarBlue }]}>
               See all
             </Text>
           </Pressable>

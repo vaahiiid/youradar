@@ -144,9 +144,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 10,
     borderRadius: 16,
-    backgroundColor: "rgba(20, 26, 48, 0.65)",
+    backgroundColor: "rgba(20, 26, 48, 0.78)",
     borderWidth: 1,
-    borderColor: "rgba(57, 255, 136, 0.35)",
+    borderColor: "rgba(47, 128, 237, 0.45)",
+    shadowColor: "#2F80ED",
+    shadowOpacity: 0.4,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 0 },
   },
   tagline: {
     color: colors.dark.coolGrey,
@@ -174,7 +178,7 @@ const styles = StyleSheet.create({
   },
   barFill: {
     height: "100%",
-    backgroundColor: colors.dark.radarGreen,
+    backgroundColor: colors.dark.radarBlue,
     borderRadius: 3,
   },
   barGlow: {
@@ -182,11 +186,11 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     height: "100%",
-    backgroundColor: colors.dark.radarGreen,
+    backgroundColor: colors.dark.softCyan,
     borderRadius: 3,
-    shadowColor: colors.dark.radarGreen,
+    shadowColor: colors.dark.softCyan,
     shadowOpacity: 1,
-    shadowRadius: 12,
+    shadowRadius: 14,
     shadowOffset: { width: 0, height: 0 },
   },
   dotsRow: {
@@ -198,7 +202,7 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: colors.dark.radarGreen,
+    backgroundColor: colors.dark.softCyan,
   },
   footer: {
     position: "absolute",

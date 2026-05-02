@@ -1,6 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   FlatList,
   Platform,
@@ -14,6 +14,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { EmptyState } from "@/components/EmptyState";
 import { NotificationCard } from "@/components/NotificationCard";
+import { RadarSpinner } from "@/components/RadarSpinner";
+import { ScanSkeleton } from "@/components/ScanSkeleton";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { useInbox } from "@/context/InboxContext";
 import { useColors } from "@/hooks/useColors";
@@ -32,8 +34,14 @@ export default function NotificationsScreen() {
   const colors = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { notifications, unseenTotal, markAllSeen } = useInbox();
+  const { notifications, unseenTotal, markAllSeen, settings } = useInbox();
   const [filter, setFilter] = useState<Filter>("all");
+  const [initialScanning, setInitialScanning] = useState(true);
+
+  useEffect(() => {
+    const t = setTimeout(() => setInitialScanning(false), 700);
+    return () => clearTimeout(t);
+  }, []);
 
   const filtered = useMemo(() => {
     switch (filter) {
@@ -71,7 +79,7 @@ export default function NotificationsScreen() {
                 },
               ]}
             >
-              <Feather name="check" size={16} color={colors.radarGreen} />
+              <Feather name="check" size={16} color={colors.radarBlue} />
               <Text
                 style={[
                   styles.actionText,
@@ -84,6 +92,23 @@ export default function NotificationsScreen() {
           ) : null
         }
       />
+
+      <View
+        style={[
+          styles.scanRow,
+          { backgroundColor: colors.card, borderColor: colors.border },
+        ]}
+      >
+        <RadarSpinner
+          size={18}
+          color={colors.softCyan}
+          reducedMotion={settings.reducedMotion}
+        />
+        <Text style={[styles.scanText, { color: colors.coolGrey }]}>
+          {unseenTotal > 0 ? "Scanning new signals..." : "Live scan active"}
+        </Text>
+        <View style={[styles.liveDot, { backgroundColor: colors.softCyan }]} />
+      </View>
 
       <ScrollView
         horizontal
@@ -99,8 +124,8 @@ export default function NotificationsScreen() {
               style={({ pressed }) => [
                 styles.chip,
                 {
-                  backgroundColor: active ? colors.radarGreen : colors.card,
-                  borderColor: active ? colors.radarGreen : colors.border,
+                  backgroundColor: active ? colors.radarBlue : colors.card,
+                  borderColor: active ? colors.radarBlue : colors.border,
                   opacity: pressed ? 0.85 : 1,
                 },
               ]}
@@ -118,33 +143,41 @@ export default function NotificationsScreen() {
         })}
       </ScrollView>
 
-      <FlatList
-        data={filtered}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={[
-          styles.listContent,
-          { paddingBottom: bottomPad },
-          filtered.length === 0 && { flexGrow: 1, justifyContent: "center" },
-        ]}
-        showsVerticalScrollIndicator={false}
-        renderItem={({ item }) => (
-          <NotificationCard
-            item={item}
-            onPress={() => router.push(`/notification/${item.id}`)}
-          />
-        )}
-        ListEmptyComponent={
-          <EmptyState
-            icon="bell-off"
-            title="No signals"
-            message={
-              filter === "unread"
-                ? "Nothing unread right now. Trigger a simulation from the Radar tab to see how alerts feel."
-                : "When new activity arrives in any connected source, it shows up here instantly."
-            }
-          />
-        }
-      />
+      {initialScanning ? (
+        <View style={styles.scanList}>
+          <ScanSkeleton height={84} />
+          <ScanSkeleton height={84} />
+          <ScanSkeleton height={84} />
+        </View>
+      ) : (
+        <FlatList
+          data={filtered}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={[
+            styles.listContent,
+            { paddingBottom: bottomPad },
+            filtered.length === 0 && { flexGrow: 1, justifyContent: "center" },
+          ]}
+          showsVerticalScrollIndicator={false}
+          renderItem={({ item }) => (
+            <NotificationCard
+              item={item}
+              onPress={() => router.push(`/notification/${item.id}`)}
+            />
+          )}
+          ListEmptyComponent={
+            <EmptyState
+              icon="bell-off"
+              title="No signals"
+              message={
+                filter === "unread"
+                  ? "Nothing unread right now. Trigger a simulation from the Radar tab to see how alerts feel."
+                  : "When new activity arrives in any connected source, it shows up here instantly."
+              }
+            />
+          }
+        />
+      )}
     </View>
   );
 }
@@ -170,6 +203,10 @@ const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: 20,
   },
+  scanList: {
+    paddingHorizontal: 20,
+    paddingTop: 4,
+  },
   action: {
     flexDirection: "row",
     alignItems: "center",
@@ -181,5 +218,31 @@ const styles = StyleSheet.create({
   actionText: {
     fontFamily: "Inter_600SemiBold",
     fontSize: 13,
+  },
+  scanRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 999,
+    borderWidth: 1,
+    marginHorizontal: 20,
+    marginBottom: 12,
+    alignSelf: "flex-start",
+  },
+  scanText: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 12,
+    letterSpacing: 0.3,
+  },
+  liveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    shadowColor: "#56CCF2",
+    shadowOpacity: 0.9,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 0 },
   },
 });

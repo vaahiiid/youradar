@@ -98,7 +98,7 @@ export default function NotificationDetailScreen() {
 
         <View style={styles.metaRow}>
           <View style={[styles.tag, { backgroundColor: colors.secondary }]}>
-            <Text style={[styles.tagText, { color: colors.radarGreen }]}>
+            <Text style={[styles.tagText, { color: colors.radarBlue }]}>
               {providerName}
             </Text>
           </View>
@@ -128,7 +128,7 @@ export default function NotificationDetailScreen() {
           <View
             style={[
               styles.avatar,
-              { backgroundColor: isInstagram ? colors.instagram : colors.radarGreen },
+              { backgroundColor: isInstagram ? colors.instagram : colors.radarBlue },
             ]}
           >
             <Text
@@ -206,7 +206,7 @@ export default function NotificationDetailScreen() {
           style={({ pressed }) => [
             styles.openBtn,
             {
-              backgroundColor: colors.radarGreen,
+              backgroundColor: colors.radarBlue,
               opacity: !notification.providerWebLink ? 0.5 : pressed ? 0.85 : 1,
             },
           ]}

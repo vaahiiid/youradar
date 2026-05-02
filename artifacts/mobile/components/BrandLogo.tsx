@@ -11,7 +11,7 @@ interface BrandLogoProps {
 }
 
 export function BrandLogo({ height = 28, style, tintColor }: BrandLogoProps) {
-  const width = height * (1024 / 280);
+  const width = height * (4375 / 1238);
   return (
     <Image
       source={wordmark}
