@@ -106,7 +106,7 @@ export function RadarPulse({
         style={[
           StyleSheet.absoluteFillObject,
           styles.staticRing,
-          { borderColor: "rgba(47, 128, 237, 0.55)", borderRadius: size / 2 },
+          { borderColor: "rgba(0, 151, 178, 0.45)", borderRadius: size / 2 },
         ]}
       />
       <View
@@ -116,7 +116,7 @@ export function RadarPulse({
             width: size * 0.7,
             height: size * 0.7,
             borderRadius: (size * 0.7) / 2,
-            borderColor: "rgba(47, 128, 237, 0.45)",
+            borderColor: "rgba(0, 151, 178, 0.32)",
             top: size * 0.15,
             left: size * 0.15,
           },
@@ -129,7 +129,7 @@ export function RadarPulse({
             width: size * 0.4,
             height: size * 0.4,
             borderRadius: (size * 0.4) / 2,
-            borderColor: "rgba(86, 204, 242, 0.55)",
+            borderColor: "rgba(86, 197, 214, 0.5)",
             top: size * 0.3,
             left: size * 0.3,
           },
@@ -144,7 +144,7 @@ export function RadarPulse({
             width: size,
             height: 1,
             top: size / 2 - 0.5,
-            backgroundColor: "rgba(47, 128, 237, 0.18)",
+            backgroundColor: "rgba(84, 79, 77, 0.12)",
           },
         ]}
       />
@@ -155,7 +155,7 @@ export function RadarPulse({
             width: 1,
             height: size,
             left: size / 2 - 0.5,
-            backgroundColor: "rgba(47, 128, 237, 0.18)",
+            backgroundColor: "rgba(84, 79, 77, 0.12)",
           },
         ]}
       />
@@ -189,7 +189,7 @@ export function RadarPulse({
                 left: size / 2,
                 top: size / 2 - size / 2,
                 borderTopRightRadius: size / 2,
-                backgroundColor: "rgba(47, 128, 237, 0.18)",
+                backgroundColor: "rgba(0, 151, 178, 0.14)",
               },
             ]}
           />
@@ -224,9 +224,9 @@ export function RadarPulse({
           {
             top: size * 0.78,
             left: size * 0.62,
-            backgroundColor: colors.violetAccent,
-            shadowColor: colors.violetAccent,
-            opacity: 0.85,
+            backgroundColor: colors.brandNavy,
+            shadowColor: colors.brandNavy,
+            opacity: 0.55,
           },
         ]}
       />

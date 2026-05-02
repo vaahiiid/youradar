@@ -388,7 +388,7 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    shadowColor: "#2F80ED",
+    shadowColor: "#0097b2",
     shadowOpacity: 0.9,
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 0 },

@@ -34,7 +34,7 @@ export function ScreenHeader({
             <View style={styles.miniRadar}>
               <RadarPulse size={36} rings={2} showSweep={false} />
             </View>
-            <BrandLogo height={28} tintColor={colors.brandNavy} />
+            <BrandLogo height={32} />
           </View>
           {right}
         </View>

@@ -298,7 +298,7 @@ export default function SettingsScreen() {
               reducedMotion={settings.reducedMotion}
             />
           </View>
-          <BrandLogo height={18} tintColor={colors.brandNavy} />
+          <BrandLogo height={20} />
           <Text style={[styles.poweredBy, { color: colors.coolGrey }]}>
             powered by you group
           </Text>

@@ -33,12 +33,12 @@ export function EmptyState({
               styles.logoBadge,
               {
                 backgroundColor: "#FFFFFF",
-                borderColor: "rgba(47, 128, 237, 0.35)",
+                borderColor: "rgba(0, 151, 178, 0.25)",
               },
             ]}
             pointerEvents="none"
           >
-            <BrandLogo height={22} tintColor={colors.brandNavy} />
+            <BrandLogo height={24} />
           </View>
         </View>
       ) : (

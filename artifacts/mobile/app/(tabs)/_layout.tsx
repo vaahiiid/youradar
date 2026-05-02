@@ -54,8 +54,8 @@ function ClassicTabLayout() {
     <Tabs
       tabBar={isWeb ? (props) => <CustomTabBar {...props} /> : undefined}
       screenOptions={{
-        tabBarActiveTintColor: colors.radarBlue,
-        tabBarInactiveTintColor: colors.coolGrey,
+        tabBarActiveTintColor: colors.brandTealDeep,
+        tabBarInactiveTintColor: "#8A8A8A",
         headerShown: false,
         sceneStyle: { backgroundColor: colors.background },
         tabBarLabelStyle: {
@@ -64,9 +64,9 @@ function ClassicTabLayout() {
         },
         tabBarStyle: {
           position: "absolute",
-          backgroundColor: isIOS ? "transparent" : colors.background,
-          borderTopWidth: 0.5,
-          borderTopColor: colors.border,
+          backgroundColor: isIOS ? "transparent" : "#FFFFFF",
+          borderTopWidth: 1,
+          borderTopColor: "#E5E7EB",
           elevation: 0,
         },
         tabBarItemStyle: {

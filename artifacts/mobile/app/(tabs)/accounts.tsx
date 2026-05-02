@@ -208,16 +208,16 @@ export default function AccountsScreen() {
                           style={[
                             styles.roadmapPill,
                             {
-                              backgroundColor: "rgba(139, 92, 246, 0.10)",
-                              borderColor: "rgba(139, 92, 246, 0.40)",
+                              backgroundColor: "rgba(84, 79, 77, 0.06)",
+                              borderColor: "rgba(84, 79, 77, 0.25)",
                             },
                           ]}
                         >
-                          <Feather name="clock" size={9} color={colors.violetAccent} />
+                          <Feather name="clock" size={9} color={colors.coolGrey} />
                           <Text
                             style={[
                               styles.roadmapPillText,
-                              { color: colors.violetAccent },
+                              { color: colors.coolGrey },
                             ]}
                           >
                             API setup required
@@ -573,7 +573,7 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 16,
     borderWidth: 1,
-    shadowColor: "#0B1020",
+    shadowColor: "#544f4d",
     shadowOpacity: 0.04,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
@@ -688,7 +688,7 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    shadowColor: "#2F80ED",
+    shadowColor: "#0097b2",
     shadowOpacity: 0.9,
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 0 },
@@ -713,7 +713,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 999,
     maxWidth: "100%",
-    shadowColor: "#0B1020",
+    shadowColor: "#544f4d",
     shadowOpacity: 0.18,
     shadowRadius: 14,
     shadowOffset: { width: 0, height: 6 },
@@ -727,7 +727,7 @@ const styles = StyleSheet.create({
   },
   renameBackdrop: {
     flex: 1,
-    backgroundColor: "rgba(11, 16, 32, 0.45)",
+    backgroundColor: "rgba(84, 79, 77, 0.45)",
     justifyContent: "center",
     alignItems: "center",
     padding: 20,

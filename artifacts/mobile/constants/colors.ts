@@ -1,25 +1,36 @@
+// YourRadar brand palette.
+// Primary brand colors come from the logo: teal (#0097b2) and charcoal (#544f4d).
+// Token names like `radarBlue` / `brandNavy` / `softCyan` are kept as semantic
+// aliases so the rest of the codebase doesn't need to be touched, but they now
+// point to the new teal/charcoal values.
+const TEAL = "#0097b2";
+const TEAL_DEEP = "#007A91"; // hover/active darker teal
+const TEAL_SOFT = "#56C5D6"; // lighter teal for inner radar rings, glows
+const CHARCOAL = "#544f4d";
+const CHARCOAL_MUTED = "#6B6B6B";
+
 const lightPalette = {
-  text: "#0B1020",
-  tint: "#2F80ED",
+  text: CHARCOAL,
+  tint: TEAL,
 
   background: "#FFFFFF",
-  foreground: "#0B1020",
+  foreground: CHARCOAL,
 
   card: "#FFFFFF",
-  cardForeground: "#0B1020",
+  cardForeground: CHARCOAL,
   surfaceElevated: "#F7F9FC",
 
-  primary: "#2F80ED",
+  primary: TEAL,
   primaryForeground: "#FFFFFF",
 
   secondary: "#F7F9FC",
-  secondaryForeground: "#0B1020",
+  secondaryForeground: CHARCOAL,
 
   muted: "#F7F9FC",
-  mutedForeground: "#667085",
+  mutedForeground: CHARCOAL_MUTED,
 
   accent: "#F7F9FC",
-  accentForeground: "#2F80ED",
+  accentForeground: TEAL,
 
   destructive: "#FF3B30",
   destructiveForeground: "#FFFFFF",
@@ -27,7 +38,7 @@ const lightPalette = {
   border: "#E5E7EB",
   input: "#E5E7EB",
 
-  // Brand colors per provider
+  // Brand colors per provider (unchanged — they're external brands)
   gmail: "#EA4335",
   outlook: "#0078D4",
   yahoo: "#6001D2",
@@ -45,14 +56,17 @@ const lightPalette = {
   royalmail: "#ED1C24",
   amazon: "#FF9900",
 
-  success: "#2F80ED",
+  success: TEAL,
   warning: "#F5A524",
 
-  brandNavy: "#0B1020",
-  radarBlue: "#2F80ED",
-  softCyan: "#56CCF2",
-  violetAccent: "#8B5CF6",
-  coolGrey: "#667085",
+  // Semantic aliases used throughout the app — values now align with the new
+  // logo brand. Keep these names so call sites continue to work.
+  brandNavy: CHARCOAL,
+  brandTealDeep: TEAL_DEEP,
+  radarBlue: TEAL,
+  softCyan: TEAL_SOFT,
+  violetAccent: TEAL_SOFT,
+  coolGrey: CHARCOAL_MUTED,
   offWhite: "#F7F9FC",
   notificationRed: "#FF3B30",
 };

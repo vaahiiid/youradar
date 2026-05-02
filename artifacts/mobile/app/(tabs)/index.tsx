@@ -428,7 +428,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     overflow: "hidden",
-    shadowColor: "#0B1020",
+    shadowColor: "#544f4d",
     shadowOpacity: 0.06,
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 8 },

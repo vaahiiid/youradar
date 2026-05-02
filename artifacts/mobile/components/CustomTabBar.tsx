@@ -62,7 +62,7 @@ export function CustomTabBar({ state, navigation }: CustomTabBarProps) {
         const isFocused = state.index === index;
         const iconName = TAB_ICONS[route.name] ?? "circle";
         const label = TAB_LABELS[route.name] ?? route.name;
-        const tint = isFocused ? colors.radarBlue : "#667085";
+        const tint = isFocused ? colors.brandTealDeep : "#8A8A8A";
 
         const onPress = () => {
           const event = navigation.emit({

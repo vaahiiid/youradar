@@ -355,14 +355,14 @@ export function ConnectAccountSheet({
                 style={[
                   styles.roadmapBadge,
                   {
-                    backgroundColor: "rgba(139, 92, 246, 0.10)",
-                    borderColor: "rgba(139, 92, 246, 0.40)",
+                    backgroundColor: "rgba(84, 79, 77, 0.06)",
+                    borderColor: "rgba(84, 79, 77, 0.25)",
                   },
                 ]}
               >
-                <Feather name="clock" size={12} color={colors.violetAccent} />
+                <Feather name="clock" size={12} color={colors.coolGrey} />
                 <Text
-                  style={[styles.roadmapText, { color: colors.violetAccent }]}
+                  style={[styles.roadmapText, { color: colors.coolGrey }]}
                 >
                   Coming soon · API setup required
                 </Text>
@@ -522,7 +522,8 @@ export function ConnectAccountSheet({
                   styles.button,
                   styles.secondaryBtn,
                   {
-                    backgroundColor: colors.secondary,
+                    backgroundColor: "#FFFFFF",
+                    borderColor: colors.radarBlue,
                     opacity: pressed ? 0.8 : 1,
                   },
                 ]}
@@ -530,7 +531,7 @@ export function ConnectAccountSheet({
                 <Text
                   style={[
                     styles.buttonText,
-                    { color: colors.secondaryForeground },
+                    { color: colors.radarBlue },
                   ]}
                 >
                   Cancel
@@ -590,7 +591,7 @@ export function ConnectAccountSheet({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: "rgba(11, 16, 32, 0.45)",
+    backgroundColor: "rgba(84, 79, 77, 0.45)",
     justifyContent: "flex-end",
   },
   kbWrap: {
@@ -708,7 +709,9 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: "center",
   },
-  secondaryBtn: {},
+  secondaryBtn: {
+    borderWidth: 1.5,
+  },
   primaryBtn: {},
   buttonText: {
     fontSize: 15,

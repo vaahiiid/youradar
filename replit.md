@@ -15,22 +15,24 @@ The project is structured as a pnpm workspace monorepo using TypeScript 5.9 and 
 - **Design Sandbox (`artifacts/mockup-sandbox`):** Used for variant exploration and design mockups.
 
 ### Brand System (Light Theme)
-The mobile app features a light-only design with a consistent color palette:
+The mobile app uses a light-only palette derived directly from the YourRadar logo (charcoal "You" + teal "Radar"):
 - **Background:** `#FFFFFF` (primary background and cards)
-- **Foreground (Navy):** `#0B1020` (primary text, brand logo tint)
-- **Electric Blue:** `#2F80ED` (primary accent, CTAs, radar rings)
-- **Soft Cyan:** `#56CCF2` (inner radar ring, signal-dot glow)
-- **Violet Accent:** `#8B5CF6` ("Coming soon" badges)
-- **Cool Grey:** `#667085` (secondary text)
+- **Charcoal (foreground / text):** `#544f4d` (primary text, shadows, "You" wordmark)
+- **Teal (primary brand):** `#0097b2` (primary accent, CTAs, radar rings, "Radar" wordmark, active tab)
+- **Teal Deep:** `#007A91` (hover/active darker teal — token `brandTealDeep`)
+- **Soft Teal:** `#56C5D6` (inner radar ring, signal-dot glow)
+- **Charcoal Muted:** `#6B6B6B` (secondary text)
 - **Surface Elevated:** `#F7F9FC` (inputs, subtle fills)
 - **Border:** `#E5E7EB` (card and input borders)
 - **Notification Red:** `#FF3B30` (unread/urgent badges)
 
-Provider-specific brand colors are also defined. The `<BrandLogo />` defaults to navy on white and can be recolored.
+Token aliases in `constants/colors.ts` keep historical names but point to the new values: `radarBlue→teal`, `brandNavy/foreground/text→charcoal`, `softCyan/violetAccent→soft teal`, `coolGrey→charcoal muted`. Provider-specific brand colors (Gmail red, etc.) are unchanged.
+
+The `<BrandLogo />` renders the full-color wordmark PNG untinted by default so the brand teal+charcoal show through; an optional `tintColor` prop is available for monochrome contexts.
 
 ### Loading Experience
 The application incorporates a cohesive loading experience using the radar motif:
-- **`LoadingScreen.tsx`:** Full-screen startup with `RadarPulse` rings, rotating sweep, navy wordmark, and an animated progress bar.
+- **`LoadingScreen.tsx`:** Full-screen startup with `RadarPulse` rings, rotating sweep, the full-color wordmark badge, an animated teal progress bar, and a "powered by you group" footer.
 - **`RadarPulse.tsx`:** Concentric pulsing rings, rotating sweep, signal dots, and a cross-hair grid for visual feedback.
 - **`RadarLoader.tsx`:** Full radar with a centered wordmark badge and custom messages, used for empty states.
 - **`RadarSpinner.tsx`:** Small inline radar sweep for loaders within components.

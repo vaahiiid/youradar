@@ -79,6 +79,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     width: 120,
-    backgroundColor: "rgba(86, 204, 242, 0.12)",
+    backgroundColor: "rgba(0, 151, 178, 0.10)",
   },
 });
