@@ -1,6 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import React from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Badge } from "@/components/Badge";
@@ -82,6 +82,18 @@ export function CustomTabBar({ state, navigation }: CustomTabBarProps) {
             key={route.key}
             onPress={onPress}
             android_ripple={null}
+            focusable={false}
+            {...({ tabIndex: -1 } as object)}
+            onPressIn={
+              Platform.OS === "web"
+                ? (e) => {
+                    const target = e?.currentTarget as
+                      | { blur?: () => void }
+                      | undefined;
+                    target?.blur?.();
+                  }
+                : undefined
+            }
             style={({ pressed }) => [
               styles.item,
               { opacity: pressed ? 0.7 : 1 },

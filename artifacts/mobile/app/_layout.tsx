@@ -19,9 +19,47 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import colors from "@/constants/colors";
 import { InboxProvider } from "@/context/InboxContext";
+import { Platform } from "react-native";
 
 SplashScreen.preventAutoHideAsync();
 SystemUI.setBackgroundColorAsync(colors.light.background).catch(() => undefined);
+
+if (Platform.OS === "web" && typeof document !== "undefined") {
+  const STYLE_ID = "yourradar-global-reset";
+  if (!document.getElementById(STYLE_ID)) {
+    const style = document.createElement("style");
+    style.id = STYLE_ID;
+    style.innerHTML = `
+      *, *::before, *::after { box-sizing: border-box; }
+      html, body, #root {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: hidden;
+        margin: 0;
+        padding: 0;
+        background-color: #FFFFFF;
+      }
+      body {
+        min-height: 100dvh;
+        -webkit-text-size-adjust: 100%;
+        -webkit-tap-highlight-color: transparent;
+      }
+      *:focus, *:focus-visible, *:focus-within { outline: none !important; }
+      button, [role="button"], a, [tabindex] {
+        outline: none !important;
+        -webkit-tap-highlight-color: transparent;
+      }
+      button:focus, button:focus-visible, button:focus-within,
+      [role="button"]:focus, [role="button"]:focus-visible, [role="button"]:focus-within,
+      a:focus, a:focus-visible {
+        outline: none !important;
+        box-shadow: none !important;
+        border-color: inherit;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+}
 
 const queryClient = new QueryClient();
 
