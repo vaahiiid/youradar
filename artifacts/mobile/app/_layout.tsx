@@ -6,7 +6,9 @@ import {
   useFonts,
 } from "@expo-google-fonts/inter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Stack } from "expo-router";
+import { ClerkLoaded, ClerkProvider, useAuth } from "@clerk/expo";
+import { tokenCache } from "@clerk/expo/token-cache";
+import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import * as SystemUI from "expo-system-ui";
@@ -14,6 +16,7 @@ import React, { useEffect, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { setAuthTokenGetter, setBaseUrl } from "@workspace/api-client-react";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { LoadingScreen } from "@/components/LoadingScreen";
@@ -23,6 +26,12 @@ import { Platform } from "react-native";
 
 SplashScreen.preventAutoHideAsync();
 SystemUI.setBackgroundColorAsync(colors.light.background).catch(() => undefined);
+
+const apiDomain = process.env.EXPO_PUBLIC_DOMAIN;
+if (apiDomain) setBaseUrl(`https://${apiDomain}`);
+
+const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ?? "";
+const clerkProxyUrl = process.env.EXPO_PUBLIC_CLERK_PROXY_URL || undefined;
 
 if (Platform.OS === "web" && typeof document !== "undefined") {
   const STYLE_ID = "yourradar-global-reset";
@@ -63,6 +72,29 @@ if (Platform.OS === "web" && typeof document !== "undefined") {
 
 const queryClient = new QueryClient();
 
+function AuthGate({ children }: { children: React.ReactNode }) {
+  const { isLoaded, isSignedIn, getToken } = useAuth();
+  const segments = useSegments();
+  const router = useRouter();
+
+  useEffect(() => {
+    setAuthTokenGetter(() => getToken());
+    return () => setAuthTokenGetter(null);
+  }, [getToken]);
+
+  useEffect(() => {
+    if (!isLoaded) return;
+    const inAuthGroup = segments[0] === "(auth)";
+    if (!isSignedIn && !inAuthGroup) {
+      router.replace("/(auth)/sign-in");
+    } else if (isSignedIn && inAuthGroup) {
+      router.replace("/(tabs)");
+    }
+  }, [isLoaded, isSignedIn, segments, router]);
+
+  return <>{children}</>;
+}
+
 function RootLayoutNav() {
   return (
     <Stack
@@ -71,6 +103,7 @@ function RootLayoutNav() {
         contentStyle: { backgroundColor: colors.light.background },
       }}
     >
+      <Stack.Screen name="(auth)" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen
         name="notification/[id]"
@@ -101,25 +134,41 @@ export default function RootLayout() {
 
   if (!fontsLoaded && !fontError) return null;
 
+  if (!publishableKey) {
+    throw new Error(
+      "Missing EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY. Restart the mobile workflow after Clerk setup.",
+    );
+  }
+
   return (
-    <SafeAreaProvider>
-      <ErrorBoundary>
-        <QueryClientProvider client={queryClient}>
-          <GestureHandlerRootView
-            style={{ flex: 1, backgroundColor: colors.light.background }}
-          >
-            <KeyboardProvider>
-              <InboxProvider>
-                <StatusBar style="dark" />
-                <RootLayoutNav />
-                {!bootDone ? (
-                  <LoadingScreen onComplete={() => setBootDone(true)} />
-                ) : null}
-              </InboxProvider>
-            </KeyboardProvider>
-          </GestureHandlerRootView>
-        </QueryClientProvider>
-      </ErrorBoundary>
-    </SafeAreaProvider>
+    <ClerkProvider
+      publishableKey={publishableKey}
+      tokenCache={tokenCache}
+      proxyUrl={clerkProxyUrl}
+    >
+      <ClerkLoaded>
+        <SafeAreaProvider>
+          <ErrorBoundary>
+            <QueryClientProvider client={queryClient}>
+              <GestureHandlerRootView
+                style={{ flex: 1, backgroundColor: colors.light.background }}
+              >
+                <KeyboardProvider>
+                  <InboxProvider>
+                    <StatusBar style="dark" />
+                    <AuthGate>
+                      <RootLayoutNav />
+                    </AuthGate>
+                    {!bootDone ? (
+                      <LoadingScreen onComplete={() => setBootDone(true)} />
+                    ) : null}
+                  </InboxProvider>
+                </KeyboardProvider>
+              </GestureHandlerRootView>
+            </QueryClientProvider>
+          </ErrorBoundary>
+        </SafeAreaProvider>
+      </ClerkLoaded>
+    </ClerkProvider>
   );
 }

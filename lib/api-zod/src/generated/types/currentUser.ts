@@ -6,6 +6,6 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface SessionCreated {
+export interface CurrentUser {
   userId: string;
 }

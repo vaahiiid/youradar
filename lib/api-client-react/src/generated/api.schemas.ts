@@ -9,7 +9,7 @@ export interface HealthStatus {
   status: string;
 }
 
-export interface SessionCreated {
+export interface CurrentUser {
   userId: string;
 }
 
@@ -102,5 +102,3 @@ export interface CreateNotificationBody {
   /** @nullable */
   externalRef?: string | null;
 }
-
-export type UserHeaderParameter = string;

@@ -7,11 +7,13 @@ info:
 servers:
   - url: /api
     description: Base API path
+security:
+  - bearerAuth: []
 tags:
   - name: health
     description: Health operations
   - name: auth
-    description: Session bootstrap
+    description: Authenticated user info
   - name: sources
     description: Connected provider accounts
   - name: notifications
@@ -25,6 +27,7 @@ paths:
       tags: [health]
       summary: Health check
       description: Returns server health status
+      security: []
       responses:
         "200":
           description: Healthy
@@ -32,19 +35,21 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
-  /auth/session:
-    post:
-      operationId: createSession
+  /auth/me:
+    get:
+      operationId: getCurrentUser
       tags: [auth]
-      summary: Create a new user session
-      description: Mints a fresh user identifier. Pass it in the x-user-id header for all subsequent requests.
+      summary: Return the authenticated user's id
+      description: Requires a valid Clerk session.
       responses:
-        "201":
-          description: Session created
+        "200":
+          description: Authenticated user id
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SessionCreated"
+                $ref: "#/components/schemas/CurrentUser"
+        "401":
+          description: Unauthenticated
   /privacy:
     get:
       operationId: getPrivacy
@@ -62,8 +67,6 @@ paths:
       operationId: listSources
       tags: [sources]
       summary: List connected sources for the authenticated user
-      parameters:
-        - $ref: "#/components/parameters/UserHeader"
       responses:
         "200":
           description: Sources
@@ -72,13 +75,11 @@ paths:
               schema:
                 $ref: "#/components/schemas/SourceListResponse"
         "401":
-          description: Missing or invalid user
+          description: Unauthenticated
     post:
       operationId: createSource
       tags: [sources]
       summary: Connect a new source. Sensitive fields are encrypted server-side.
-      parameters:
-        - $ref: "#/components/parameters/UserHeader"
       requestBody:
         required: true
         content:
@@ -95,13 +96,12 @@ paths:
         "400":
           description: Invalid input
         "401":
-          description: Missing or invalid user
+          description: Unauthenticated
   /sources/{id}:
     patch:
       operationId: renameSource
       tags: [sources]
       parameters:
-        - $ref: "#/components/parameters/UserHeader"
         - in: path
           name: id
           required: true
@@ -126,7 +126,6 @@ paths:
       operationId: disconnectSource
       tags: [sources]
       parameters:
-        - $ref: "#/components/parameters/UserHeader"
         - in: path
           name: id
           required: true
@@ -141,8 +140,6 @@ paths:
     get:
       operationId: listNotifications
       tags: [notifications]
-      parameters:
-        - $ref: "#/components/parameters/UserHeader"
       responses:
         "200":
           description: Notifications
@@ -153,8 +150,6 @@ paths:
     post:
       operationId: createNotification
       tags: [notifications]
-      parameters:
-        - $ref: "#/components/parameters/UserHeader"
       requestBody:
         required: true
         content:
@@ -177,7 +172,6 @@ paths:
       operationId: markNotificationSeen
       tags: [notifications]
       parameters:
-        - $ref: "#/components/parameters/UserHeader"
         - in: path
           name: id
           required: true
@@ -193,15 +187,11 @@ paths:
         "404":
           description: Not found
 components:
-  parameters:
-    UserHeader:
-      in: header
-      name: x-user-id
-      required: true
-      schema:
-        type: string
-        minLength: 8
-        maxLength: 128
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   schemas:
     HealthStatus:
       type: object
@@ -210,7 +200,7 @@ components:
           type: string
       required:
         - status
-    SessionCreated:
+    CurrentUser:
       type: object
       required: [userId]
       properties:

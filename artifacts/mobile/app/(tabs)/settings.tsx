@@ -1,4 +1,5 @@
 import { Feather } from "@expo/vector-icons";
+import { useAuth, useUser } from "@clerk/expo";
 import * as Haptics from "expo-haptics";
 import React, { useState } from "react";
 import {
@@ -80,7 +81,57 @@ export default function SettingsScreen() {
     clearAll,
     simulateIncoming,
   } = useInbox();
+  const { signOut, isSignedIn } = useAuth();
+  const { user } = useUser();
   const [toast, setToast] = useState<EmailNotification | null>(null);
+  const [signingOut, setSigningOut] = useState(false);
+
+  const accountEmail =
+    user?.primaryEmailAddress?.emailAddress ??
+    user?.emailAddresses?.[0]?.emailAddress ??
+    null;
+  const accountName =
+    [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim() || null;
+
+  const performSignOut = async () => {
+    if (signingOut) return;
+    setSigningOut(true);
+    try {
+      await signOut();
+    } catch (err) {
+      setSigningOut(false);
+      const message = err instanceof Error ? err.message : "Could not sign out";
+      if (Platform.OS === "web") {
+        if (typeof window !== "undefined") window.alert(message);
+      } else {
+        Alert.alert("Sign out failed", message);
+      }
+    }
+  };
+
+  const confirmSignOut = () => {
+    if (Platform.OS === "web") {
+      if (
+        typeof window !== "undefined" &&
+        window.confirm("Sign out of YourRadar?")
+      ) {
+        void performSignOut();
+      }
+      return;
+    }
+    Alert.alert(
+      "Sign out",
+      "You'll need to sign in again to access your radar.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Sign out",
+          style: "destructive",
+          onPress: () => void performSignOut(),
+        },
+      ],
+    );
+  };
 
   const totalCount = notifications.length;
   const accountsCount = accounts.length;
@@ -365,6 +416,34 @@ export default function SettingsScreen() {
             />
           </View>
         </View>
+
+        {isSignedIn ? (
+          <>
+            <SectionTitle>Account</SectionTitle>
+            <Group>
+              {accountName ? (
+                <>
+                  <InfoRow label="Name" value={accountName} />
+                  <Divider />
+                </>
+              ) : null}
+              {accountEmail ? (
+                <>
+                  <InfoRow label="Email" value={accountEmail} />
+                  <Divider />
+                </>
+              ) : null}
+              <ActionRow
+                icon="log-out"
+                title={signingOut ? "Signing out…" : "Sign out"}
+                subtitle="End this session on this device"
+                onPress={confirmSignOut}
+                destructive
+                disabled={signingOut}
+              />
+            </Group>
+          </>
+        ) : null}
 
         <SectionTitle>About</SectionTitle>
         <Group>

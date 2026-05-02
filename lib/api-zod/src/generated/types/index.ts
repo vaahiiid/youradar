@@ -8,13 +8,12 @@
 
 export * from "./createNotificationBody";
 export * from "./createSourceBody";
+export * from "./currentUser";
 export * from "./healthStatus";
 export * from "./notification";
 export * from "./notificationListResponse";
 export * from "./privacyNotice";
 export * from "./privacyNoticeDetails";
 export * from "./renameSourceBody";
-export * from "./sessionCreated";
 export * from "./source";
 export * from "./sourceListResponse";
-export * from "./userHeaderParameter";

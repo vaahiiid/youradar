@@ -19,12 +19,12 @@ import type {
 import type {
   CreateNotificationBody,
   CreateSourceBody,
+  CurrentUser,
   HealthStatus,
   Notification,
   NotificationListResponse,
   PrivacyNotice,
   RenameSourceBody,
-  SessionCreated,
   Source,
   SourceListResponse,
 } from "./api.schemas";
@@ -115,86 +115,80 @@ export function useHealthCheck<
 }
 
 /**
- * Mints a fresh user identifier. Pass it in the x-user-id header for all subsequent requests.
- * @summary Create a new user session
+ * Requires a valid Clerk session.
+ * @summary Return the authenticated user's id
  */
-export const getCreateSessionUrl = () => {
-  return `/api/auth/session`;
+export const getGetCurrentUserUrl = () => {
+  return `/api/auth/me`;
 };
 
-export const createSession = async (
+export const getCurrentUser = async (
   options?: RequestInit,
-): Promise<SessionCreated> => {
-  return customFetch<SessionCreated>(getCreateSessionUrl(), {
+): Promise<CurrentUser> => {
+  return customFetch<CurrentUser>(getGetCurrentUserUrl(), {
     ...options,
-    method: "POST",
+    method: "GET",
   });
 };
 
-export const getCreateSessionMutationOptions = <
-  TError = ErrorType<unknown>,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof createSession>>,
-    TError,
-    void,
-    TContext
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}): UseMutationOptions<
-  Awaited<ReturnType<typeof createSession>>,
-  TError,
-  void,
-  TContext
-> => {
-  const mutationKey = ["createSession"];
-  const { mutation: mutationOptions, request: requestOptions } = options
-    ? options.mutation &&
-      "mutationKey" in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey }, request: undefined };
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof createSession>>,
-    void
-  > = () => {
-    return createSession(requestOptions);
-  };
-
-  return { mutationFn, ...mutationOptions };
+export const getGetCurrentUserQueryKey = () => {
+  return [`/api/auth/me`] as const;
 };
 
-export type CreateSessionMutationResult = NonNullable<
-  Awaited<ReturnType<typeof createSession>>
->;
+export const getGetCurrentUserQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCurrentUser>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getCurrentUser>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
 
-export type CreateSessionMutationError = ErrorType<unknown>;
+  const queryKey = queryOptions?.queryKey ?? getGetCurrentUserQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getCurrentUser>>> = ({
+    signal,
+  }) => getCurrentUser({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getCurrentUser>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetCurrentUserQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getCurrentUser>>
+>;
+export type GetCurrentUserQueryError = ErrorType<void>;
 
 /**
- * @summary Create a new user session
+ * @summary Return the authenticated user's id
  */
-export const useCreateSession = <
-  TError = ErrorType<unknown>,
-  TContext = unknown,
+
+export function useGetCurrentUser<
+  TData = Awaited<ReturnType<typeof getCurrentUser>>,
+  TError = ErrorType<void>,
 >(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof createSession>>,
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getCurrentUser>>,
     TError,
-    void,
-    TContext
+    TData
   >;
   request?: SecondParameter<typeof customFetch>;
-}): UseMutationResult<
-  Awaited<ReturnType<typeof createSession>>,
-  TError,
-  void,
-  TContext
-> => {
-  return useMutation(getCreateSessionMutationOptions(options));
-};
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetCurrentUserQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary Privacy and encryption disclosures

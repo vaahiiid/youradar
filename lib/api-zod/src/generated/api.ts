@@ -16,6 +16,14 @@ export const HealthCheckResponse = zod.object({
 });
 
 /**
+ * Requires a valid Clerk session.
+ * @summary Return the authenticated user's id
+ */
+export const GetCurrentUserResponse = zod.object({
+  userId: zod.string(),
+});
+
+/**
  * @summary Privacy and encryption disclosures
  */
 export const GetPrivacyResponse = zod.object({
@@ -33,16 +41,6 @@ export const GetPrivacyResponse = zod.object({
 /**
  * @summary List connected sources for the authenticated user
  */
-export const listSourcesHeaderXUserIdMin = 8;
-export const listSourcesHeaderXUserIdMax = 128;
-
-export const ListSourcesHeader = zod.object({
-  "x-user-id": zod
-    .string()
-    .min(listSourcesHeaderXUserIdMin)
-    .max(listSourcesHeaderXUserIdMax),
-});
-
 export const ListSourcesResponse = zod.object({
   items: zod.array(
     zod.object({
@@ -63,16 +61,6 @@ export const ListSourcesResponse = zod.object({
 /**
  * @summary Connect a new source. Sensitive fields are encrypted server-side.
  */
-export const createSourceHeaderXUserIdMin = 8;
-export const createSourceHeaderXUserIdMax = 128;
-
-export const CreateSourceHeader = zod.object({
-  "x-user-id": zod
-    .string()
-    .min(createSourceHeaderXUserIdMin)
-    .max(createSourceHeaderXUserIdMax),
-});
-
 export const CreateSourceBody = zod.object({
   provider: zod.string(),
   accountIdentifier: zod.string(),
@@ -84,16 +72,6 @@ export const CreateSourceBody = zod.object({
 
 export const RenameSourceParams = zod.object({
   id: zod.coerce.string(),
-});
-
-export const renameSourceHeaderXUserIdMin = 8;
-export const renameSourceHeaderXUserIdMax = 128;
-
-export const RenameSourceHeader = zod.object({
-  "x-user-id": zod
-    .string()
-    .min(renameSourceHeaderXUserIdMin)
-    .max(renameSourceHeaderXUserIdMax),
 });
 
 export const RenameSourceBody = zod.object({
@@ -117,26 +95,6 @@ export const DisconnectSourceParams = zod.object({
   id: zod.coerce.string(),
 });
 
-export const disconnectSourceHeaderXUserIdMin = 8;
-export const disconnectSourceHeaderXUserIdMax = 128;
-
-export const DisconnectSourceHeader = zod.object({
-  "x-user-id": zod
-    .string()
-    .min(disconnectSourceHeaderXUserIdMin)
-    .max(disconnectSourceHeaderXUserIdMax),
-});
-
-export const listNotificationsHeaderXUserIdMin = 8;
-export const listNotificationsHeaderXUserIdMax = 128;
-
-export const ListNotificationsHeader = zod.object({
-  "x-user-id": zod
-    .string()
-    .min(listNotificationsHeaderXUserIdMin)
-    .max(listNotificationsHeaderXUserIdMax),
-});
-
 export const ListNotificationsResponse = zod.object({
   items: zod.array(
     zod.object({
@@ -156,16 +114,6 @@ export const ListNotificationsResponse = zod.object({
   ),
 });
 
-export const createNotificationHeaderXUserIdMin = 8;
-export const createNotificationHeaderXUserIdMax = 128;
-
-export const CreateNotificationHeader = zod.object({
-  "x-user-id": zod
-    .string()
-    .min(createNotificationHeaderXUserIdMin)
-    .max(createNotificationHeaderXUserIdMax),
-});
-
 export const CreateNotificationBody = zod.object({
   sourceId: zod.string(),
   kind: zod.string(),
@@ -179,16 +127,6 @@ export const CreateNotificationBody = zod.object({
 
 export const MarkNotificationSeenParams = zod.object({
   id: zod.coerce.string(),
-});
-
-export const markNotificationSeenHeaderXUserIdMin = 8;
-export const markNotificationSeenHeaderXUserIdMax = 128;
-
-export const MarkNotificationSeenHeader = zod.object({
-  "x-user-id": zod
-    .string()
-    .min(markNotificationSeenHeaderXUserIdMin)
-    .max(markNotificationSeenHeaderXUserIdMax),
 });
 
 export const MarkNotificationSeenResponse = zod.object({
