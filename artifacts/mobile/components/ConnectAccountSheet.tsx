@@ -1,4 +1,7 @@
 import { Feather } from "@expo/vector-icons";
+import * as Linking from "expo-linking";
+import { useRouter } from "expo-router";
+import * as WebBrowser from "expo-web-browser";
 import React, { useEffect, useRef, useState } from "react";
 import {
   KeyboardAvoidingView,
@@ -10,16 +13,20 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { customFetch, ApiError } from "@workspace/api-client-react";
 
 import { ProviderIcon } from "@/components/ProviderIcon";
 import { RadarSpinner } from "@/components/RadarSpinner";
 import { useColors } from "@/hooks/useColors";
+import {
+  useOAuthProviders,
+  type OAuthProviderInfo,
+  type OAuthProviderStatus,
+} from "@/hooks/useOAuthProviders";
 import { useInbox } from "@/context/InboxContext";
 import {
   PROVIDER_LABELS,
   isDeliveryProvider,
-  isProviderImplemented,
-  type ConnectedAccount,
   type Provider,
 } from "@/types";
 
@@ -27,14 +34,6 @@ interface ConnectAccountSheetProps {
   visible: boolean;
   provider: Provider | null;
   onClose: () => void;
-  onConnect: (
-    provider: Provider,
-    handleOrEmail: string,
-    extras?: {
-      instagramKind?: ConnectedAccount["instagramKind"];
-      nickname?: string;
-    },
-  ) => void;
   onAddDelivery?: (
     provider: Provider,
     details: {
@@ -45,170 +44,44 @@ interface ConnectAccountSheetProps {
   ) => void;
 }
 
-const KIND_OPTIONS: { id: ConnectedAccount["instagramKind"]; label: string }[] = [
-  { id: "creator", label: "Creator" },
-  { id: "business", label: "Business" },
-  { id: "professional", label: "Professional" },
-];
-
-interface ProviderCopy {
-  inputLabel: string;
-  inputPlaceholder: string;
-  keyboard: "email-address" | "default" | "phone-pad";
-  validation: (v: string) => boolean;
-  blurb: string;
-  apiNote: string;
-  scopesHint: string;
+interface StartResponse {
+  ok: boolean;
+  authorizeUrl?: string;
+  reason?: string;
+  message?: string;
+  requiredEnv?: string[];
 }
 
-function getProviderCopy(provider: Provider): ProviderCopy {
+function getProviderBlurb(provider: Provider): string {
   switch (provider) {
     case "gmail":
-      return {
-        inputLabel: "Email address",
-        inputPlaceholder: "you@gmail.com",
-        keyboard: "email-address",
-        validation: (v) => v.trim().includes("@"),
-        blurb: "Add another inbox to your unified feed",
-        apiNote:
-          "In production this opens secure Google OAuth (Gmail API). My Radar requests read-only metadata scopes only.",
-        scopesHint: "Inbox · labels · read-only metadata",
-      };
+      return "Add a Gmail inbox to your unified feed.";
     case "outlook":
-      return {
-        inputLabel: "Email address",
-        inputPlaceholder: "you@outlook.com",
-        keyboard: "email-address",
-        validation: (v) => v.trim().includes("@"),
-        blurb: "Add another inbox to your unified feed",
-        apiNote:
-          "In production this opens secure Microsoft OAuth (Microsoft Graph API). My Radar requests Mail.Read scope only.",
-        scopesHint: "Inbox · folders · read-only mail",
-      };
-    case "yahoo":
-      return {
-        inputLabel: "Yahoo Mail address",
-        inputPlaceholder: "you@yahoo.com",
-        keyboard: "email-address",
-        validation: (v) => v.trim().includes("@"),
-        blurb: "Receive Yahoo Mail signal alerts",
-        apiNote:
-          "Yahoo Mail uses secure Yahoo OAuth where available. We never ask for your password and never enable insecure IMAP password access.",
-        scopesHint: "Mail · read-only inbox metadata",
-      };
-    case "aol":
-      return {
-        inputLabel: "AOL Mail address",
-        inputPlaceholder: "you@aol.com",
-        keyboard: "email-address",
-        validation: (v) => v.trim().includes("@"),
-        blurb: "Add an AOL inbox to your unified feed",
-        apiNote:
-          "AOL Mail uses secure OAuth where available. We never ask for your password and never store raw email credentials.",
-        scopesHint: "Mail · read-only inbox metadata",
-      };
     case "hotmail":
-      return {
-        inputLabel: "Hotmail / Outlook.com address",
-        inputPlaceholder: "you@hotmail.com",
-        keyboard: "email-address",
-        validation: (v) => v.trim().includes("@"),
-        blurb: "Hotmail and Outlook.com via Microsoft Graph",
-        apiNote:
-          "Hotmail and Outlook.com use Microsoft Graph through secure Microsoft OAuth. My Radar requests Mail.Read scope only.",
-        scopesHint: "Inbox · folders · read-only mail",
-      };
+      return "Add a Microsoft inbox to your unified feed.";
+    case "yahoo":
+      return "Add a Yahoo Mail inbox to your unified feed.";
+    case "aol":
+      return "Add an AOL Mail inbox to your unified feed.";
     case "instagram":
-      return {
-        inputLabel: "Instagram handle",
-        inputPlaceholder: "@yourhandle",
-        keyboard: "default",
-        validation: (v) => v.trim().length >= 2,
-        blurb: "Track DMs, comments, mentions, and insights",
-        apiNote:
-          "Instagram monitoring works through official Meta APIs and may require a professional Instagram account and Meta app permissions. In production this opens secure Meta OAuth.",
-        scopesHint: "Messaging · comments · mentions · insights",
-      };
+      return "Track DMs, comments, mentions, and insights.";
     case "linkedin":
-      return {
-        inputLabel: "LinkedIn email or vanity URL",
-        inputPlaceholder: "linkedin.com/in/yourname",
-        keyboard: "default",
-        validation: (v) => v.trim().length >= 4,
-        blurb: "Track engagement on your profile and pages",
-        apiNote:
-          "LinkedIn integrations use the official LinkedIn API. Available events depend on your account type and approved partner permissions. We never scrape LinkedIn or use unofficial endpoints.",
-        scopesHint: "Profile views · post engagement · messages (where supported)",
-      };
+      return "Track engagement on your profile and pages.";
     case "facebook":
-      return {
-        inputLabel: "Facebook page or profile name",
-        inputPlaceholder: "Your Page name",
-        keyboard: "default",
-        validation: (v) => v.trim().length >= 2,
-        blurb: "Track page comments, mentions, and messages",
-        apiNote:
-          "Facebook integrations use the Meta Graph API and Webhooks. Page-related events require Page admin permissions. Personal Facebook notifications are not available through official APIs.",
-        scopesHint: "Page comments · mentions · Messenger conversations",
-      };
+      return "Track Facebook page comments, mentions, and messages.";
     case "telegram":
-      return {
-        inputLabel: "Bot token or @channel handle",
-        inputPlaceholder: "@yourchannel or 123456:ABC...",
-        keyboard: "default",
-        validation: (v) => v.trim().length >= 4,
-        blurb: "Connect a Telegram bot, channel, or group",
-        apiNote:
-          "Telegram uses the official Bot API with webhooks. Connect a bot you own to receive updates from chats and channels it has access to.",
-        scopesHint: "Bot updates · channel posts · group messages",
-      };
+      return "Connect a Telegram bot, channel, or group.";
     case "whatsapp":
-      return {
-        inputLabel: "WhatsApp Business number",
-        inputPlaceholder: "+1 555 555 5555",
-        keyboard: "phone-pad",
-        validation: (v) => v.trim().length >= 6,
-        blurb: "Receive WhatsApp Business message alerts",
-        apiNote:
-          "WhatsApp uses the official WhatsApp Business Cloud API. Personal WhatsApp messages and personal app notifications cannot be monitored — only Business API conversations are supported.",
-        scopesHint: "Business inbox · template responses · webhook events",
-      };
+      return "Receive WhatsApp Business message alerts.";
     case "tiktok":
-      return {
-        inputLabel: "TikTok handle",
-        inputPlaceholder: "@yourhandle",
-        keyboard: "default",
-        validation: (v) => v.trim().length >= 2,
-        blurb: "Track creator and business events on TikTok",
-        apiNote:
-          "TikTok integrations use the official TikTok for Developers APIs. Available events depend on creator/business account access and app review approval. We never scrape TikTok.",
-        scopesHint: "Comments · follows · video performance (where supported)",
-      };
+      return "Track creator and business events on TikTok.";
     case "x":
-      return {
-        inputLabel: "X handle",
-        inputPlaceholder: "@yourhandle",
-        keyboard: "default",
-        validation: (v) => v.trim().length >= 2,
-        blurb: "Track mentions and engagement on X",
-        apiNote:
-          "X integrations use the official X API. Available events depend on your X developer access tier. We never scrape X or ask for your password.",
-        scopesHint: "Mentions · engagement · post performance (where supported)",
-      };
+      return "Track mentions and engagement on X.";
     case "evri":
     case "dpd":
     case "royalmail":
     case "amazon":
-      return {
-        inputLabel: "Tracking number",
-        inputPlaceholder: "Paste your tracking number",
-        keyboard: "default",
-        validation: (v) => v.trim().length >= 4,
-        blurb: "Track a delivery and get status alerts",
-        apiNote:
-          "Delivery tracking uses official courier APIs and webhooks where available. We never scrape courier accounts or ask for courier passwords. If a courier API isn't available we fall back to manual tracking with status alerts.",
-        scopesHint: "Status updates · estimated delivery · exception alerts",
-      };
+      return "Track a delivery and get status alerts.";
   }
 }
 
@@ -216,99 +89,154 @@ export function ConnectAccountSheet({
   visible,
   provider,
   onClose,
-  onConnect,
   onAddDelivery,
 }: ConnectAccountSheetProps) {
   const colors = useColors();
+  const router = useRouter();
   const { settings } = useInbox();
-  const [value, setValue] = useState("");
-  const [nickname, setNickname] = useState("");
+  const { byId } = useOAuthProviders();
+
+  // Delivery flow state — delivery is not OAuth, it's a real tracking-number form.
+  const [trackingNumber, setTrackingNumber] = useState("");
   const [label, setLabel] = useState("");
   const [merchant, setMerchant] = useState("");
-  const [kind, setKind] =
-    useState<ConnectedAccount["instagramKind"]>("creator");
-  const [connecting, setConnecting] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const [working, setWorking] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const cancelledRef = useRef(false);
 
   useEffect(() => {
     if (!visible) {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-        timerRef.current = null;
-      }
-      setConnecting(false);
+      cancelledRef.current = false;
+      setWorking(false);
+      setErrorMsg(null);
+      setTrackingNumber("");
+      setLabel("");
+      setMerchant("");
     }
   }, [visible]);
 
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-        timerRef.current = null;
-      }
-    };
-  }, []);
+  if (!provider) return null;
 
-  const reset = () => {
-    setValue("");
-    setNickname("");
-    setLabel("");
-    setMerchant("");
-    setKind("creator");
-  };
+  const isDelivery = isDeliveryProvider(provider);
+  const providerName = PROVIDER_LABELS[provider];
+  const info: OAuthProviderInfo | undefined = byId[provider];
+  const status: OAuthProviderStatus = info?.status ?? "coming_soon";
 
   const handleClose = () => {
-    if (connecting) return;
-    reset();
+    if (working) return;
     onClose();
   };
 
-  if (!provider) return null;
-
-  const copy = getProviderCopy(provider);
-  const isInstagram = provider === "instagram";
-  const isDelivery = isDeliveryProvider(provider);
-  const isImplemented = isProviderImplemented(provider);
-  const isValid =
-    copy.validation(value) && (!isDelivery || label.trim().length >= 1);
-
-  const handleConnect = () => {
-    if (!provider || !isValid || connecting) return;
-    setConnecting(true);
-    const submittedProvider = provider;
-    const submittedValue = value.trim();
-    const submittedNickname = nickname.trim();
-    const submittedLabel = label.trim();
-    const submittedMerchant = merchant.trim();
-    const submittedKind = kind;
-    timerRef.current = setTimeout(() => {
-      timerRef.current = null;
-      if (isDelivery && onAddDelivery) {
-        onAddDelivery(submittedProvider, {
-          trackingNumber: submittedValue,
-          label: submittedLabel,
-          merchant: submittedMerchant || undefined,
-        });
-      } else {
-        const extras: {
-          instagramKind?: ConnectedAccount["instagramKind"];
-          nickname?: string;
-        } = {};
-        if (isInstagram) extras.instagramKind = submittedKind;
-        if (submittedNickname) extras.nickname = submittedNickname;
-        onConnect(
-          submittedProvider,
-          submittedValue,
-          Object.keys(extras).length > 0 ? extras : undefined,
-        );
-      }
-      reset();
-      setConnecting(false);
-      onClose();
-    }, 600);
+  // -----------------------------------------------------------------
+  // Delivery flow (manual tracking number — not OAuth, not a password)
+  // -----------------------------------------------------------------
+  const handleAddDelivery = () => {
+    if (!provider || working) return;
+    const tn = trackingNumber.trim();
+    const lbl = label.trim();
+    if (tn.length < 4 || lbl.length < 1) return;
+    setWorking(true);
+    onAddDelivery?.(provider, {
+      trackingNumber: tn,
+      label: lbl,
+      merchant: merchant.trim() || undefined,
+    });
+    setWorking(false);
+    onClose();
   };
 
-  const providerName = PROVIDER_LABELS[provider];
+  // -----------------------------------------------------------------
+  // OAuth flow (Gmail / Outlook / Instagram once configured)
+  // -----------------------------------------------------------------
+  const handleConnectOAuth = async () => {
+    if (!provider || working) return;
+    setErrorMsg(null);
+    setWorking(true);
+
+    const returnUrl = Linking.createURL("oauth-success");
+
+    try {
+      // 1. Ask server for an authorize URL. If provider is not configured,
+      //    server returns 501 — we surface the message to the user.
+      const start = await customFetch<StartResponse>(
+        `/api/oauth/${provider}/start`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ returnUrl }),
+          responseType: "json",
+        },
+      );
+
+      if (!start.authorizeUrl) {
+        setErrorMsg(start.message ?? "Provider is not configured yet.");
+        setWorking(false);
+        return;
+      }
+
+      // 2. Open the provider's authorize URL.
+      if (Platform.OS === "web") {
+        // Full-page redirect — server callback will redirect back to
+        // /oauth-success which renders our success route.
+        if (typeof window !== "undefined") {
+          window.location.href = start.authorizeUrl;
+        }
+        return; // unmounting — no further work
+      }
+
+      const result = await WebBrowser.openAuthSessionAsync(
+        start.authorizeUrl,
+        returnUrl,
+      );
+
+      if (cancelledRef.current) return;
+
+      if (result.type !== "success" || !result.url) {
+        setWorking(false);
+        if (result.type === "cancel" || result.type === "dismiss") {
+          setErrorMsg("Connection cancelled.");
+        } else {
+          setErrorMsg("Connection did not complete.");
+        }
+        return;
+      }
+
+      // 3. Parse return params and navigate to success screen.
+      const parsed = Linking.parse(result.url);
+      const params = parsed.queryParams ?? {};
+      const status = typeof params.status === "string" ? params.status : "";
+      const account = typeof params.account === "string" ? params.account : "";
+      const reason = typeof params.reason === "string" ? params.reason : "";
+      const sourceId =
+        typeof params.sourceId === "string" ? params.sourceId : "";
+
+      onClose();
+      router.push({
+        pathname: "/oauth-success",
+        params: { provider, status, account, reason, sourceId },
+      });
+    } catch (err) {
+      let message = "Could not start connection. Please try again.";
+      if (err instanceof ApiError) {
+        const data = err.data as
+          | { message?: string; reason?: string; requiredEnv?: string[] }
+          | null;
+        if (data?.message) message = data.message;
+        else if (data?.reason) message = data.reason;
+      } else if (err instanceof Error) {
+        message = err.message;
+      }
+      setErrorMsg(message);
+      setWorking(false);
+    }
+  };
+
+  // -----------------------------------------------------------------
+  // Render
+  // -----------------------------------------------------------------
+  const isValidDelivery =
+    isDelivery && trackingNumber.trim().length >= 4 && label.trim().length >= 1;
 
   return (
     <Modal
@@ -345,246 +273,392 @@ export function ConnectAccountSheet({
                 <Text
                   style={[styles.subtitle, { color: colors.mutedForeground }]}
                 >
-                  {copy.blurb}
+                  {getProviderBlurb(provider)}
                 </Text>
               </View>
             </View>
-
-            {!isImplemented && !isDelivery ? (
-              <View
-                style={[
-                  styles.roadmapBadge,
-                  {
-                    backgroundColor: "rgba(84, 79, 77, 0.06)",
-                    borderColor: "rgba(84, 79, 77, 0.25)",
-                  },
-                ]}
-              >
-                <Feather name="clock" size={12} color={colors.coolGrey} />
-                <Text
-                  style={[styles.roadmapText, { color: colors.coolGrey }]}
-                >
-                  Coming soon · API setup required
-                </Text>
-              </View>
-            ) : null}
-
-            <View
-              style={[
-                styles.note,
-                { backgroundColor: colors.secondary, borderColor: colors.border },
-              ]}
-            >
-              <Feather name="shield" size={14} color={colors.radarBlue} />
-              <Text style={[styles.noteText, { color: colors.secondaryForeground }]}>
-                {copy.apiNote}
-              </Text>
-            </View>
-
-            <View style={styles.scopesRow}>
-              <Feather name="check-circle" size={12} color={colors.success} />
-              <Text style={[styles.scopesText, { color: colors.mutedForeground }]}>
-                {copy.scopesHint}
-              </Text>
-            </View>
-
-            <Text style={[styles.label, { color: colors.mutedForeground }]}>
-              {copy.inputLabel}
-            </Text>
-            <TextInput
-              value={value}
-              onChangeText={setValue}
-              placeholder={copy.inputPlaceholder}
-              placeholderTextColor={colors.mutedForeground}
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType={copy.keyboard}
-              style={[
-                styles.input,
-                {
-                  backgroundColor: colors.surfaceElevated,
-                  color: colors.foreground,
-                  borderColor: colors.border,
-                },
-              ]}
-            />
-
-            {!isDelivery ? (
-              <>
-                <Text style={[styles.label, { color: colors.mutedForeground }]}>
-                  Label this source (optional)
-                </Text>
-                <TextInput
-                  value={nickname}
-                  onChangeText={setNickname}
-                  placeholder="e.g. Personal, Work, Side project"
-                  placeholderTextColor={colors.mutedForeground}
-                  autoCapitalize="words"
-                  style={[
-                    styles.input,
-                    {
-                      backgroundColor: colors.surfaceElevated,
-                      color: colors.foreground,
-                      borderColor: colors.border,
-                    },
-                  ]}
-                />
-              </>
-            ) : null}
 
             {isDelivery ? (
-              <>
-                <Text style={[styles.label, { color: colors.mutedForeground }]}>
-                  Order label
-                </Text>
-                <TextInput
-                  value={label}
-                  onChangeText={setLabel}
-                  placeholder="e.g. New running shoes"
-                  placeholderTextColor={colors.mutedForeground}
-                  autoCapitalize="sentences"
-                  style={[
-                    styles.input,
-                    {
-                      backgroundColor: colors.surfaceElevated,
-                      color: colors.foreground,
-                      borderColor: colors.border,
-                    },
-                  ]}
-                />
-                <Text style={[styles.label, { color: colors.mutedForeground }]}>
-                  Merchant (optional)
-                </Text>
-                <TextInput
-                  value={merchant}
-                  onChangeText={setMerchant}
-                  placeholder="e.g. ASOS, Etsy, Amazon"
-                  placeholderTextColor={colors.mutedForeground}
-                  autoCapitalize="words"
-                  style={[
-                    styles.input,
-                    {
-                      backgroundColor: colors.surfaceElevated,
-                      color: colors.foreground,
-                      borderColor: colors.border,
-                    },
-                  ]}
-                />
-              </>
-            ) : null}
-
-            {isInstagram ? (
-              <>
-                <Text style={[styles.label, { color: colors.mutedForeground }]}>
-                  Account type
-                </Text>
-                <View style={styles.kindRow}>
-                  {KIND_OPTIONS.map((opt) => {
-                    const active = kind === opt.id;
-                    return (
-                      <Pressable
-                        key={opt.id}
-                        onPress={() => setKind(opt.id)}
-                        style={({ pressed }) => [
-                          styles.kindChip,
-                          {
-                            backgroundColor: active
-                              ? colors.radarBlue
-                              : colors.surfaceElevated,
-                            borderColor: active ? colors.radarBlue : colors.border,
-                            opacity: pressed ? 0.85 : 1,
-                          },
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.kindChipText,
-                            {
-                              color: active
-                                ? colors.primaryForeground
-                                : colors.foreground,
-                            },
-                          ]}
-                        >
-                          {opt.label}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              </>
-            ) : null}
-
-            <View style={styles.buttonRow}>
-              <Pressable
-                onPress={handleClose}
-                style={({ pressed }) => [
-                  styles.button,
-                  styles.secondaryBtn,
-                  {
-                    backgroundColor: "#FFFFFF",
-                    borderColor: colors.radarBlue,
-                    opacity: pressed ? 0.8 : 1,
-                  },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.buttonText,
-                    { color: colors.radarBlue },
-                  ]}
-                >
-                  Cancel
-                </Text>
-              </Pressable>
-              <Pressable
-                onPress={handleConnect}
-                disabled={!isValid || connecting}
-                style={({ pressed }) => [
-                  styles.button,
-                  styles.primaryBtn,
-                  {
-                    backgroundColor: colors.radarBlue,
-                    opacity: !isValid ? 0.5 : pressed ? 0.85 : 1,
-                  },
-                ]}
-              >
-                {connecting ? (
-                  <View style={styles.connectingRow}>
-                    <RadarSpinner
-                      size={16}
-                      color={colors.primaryForeground}
-                      reducedMotion={settings.reducedMotion}
-                    />
-                    <Text
-                      style={[
-                        styles.buttonText,
-                        { color: colors.primaryForeground },
-                      ]}
-                    >
-                      {isDelivery ? "Adding..." : "Connecting..."}
-                    </Text>
-                  </View>
-                ) : (
-                  <Text
-                    style={[
-                      styles.buttonText,
-                      { color: colors.primaryForeground },
-                    ]}
-                  >
-                    {isDelivery
-                      ? `Track ${providerName}`
-                      : isImplemented
-                        ? "Connect"
-                        : "Add to roadmap"}
-                  </Text>
-                )}
-              </Pressable>
-            </View>
+              <DeliveryBody
+                providerName={providerName}
+                trackingNumber={trackingNumber}
+                setTrackingNumber={setTrackingNumber}
+                label={label}
+                setLabel={setLabel}
+                merchant={merchant}
+                setMerchant={setMerchant}
+                colors={colors}
+                onCancel={handleClose}
+                onSubmit={handleAddDelivery}
+                disabled={!isValidDelivery || working}
+                working={working}
+                reducedMotion={settings.reducedMotion}
+              />
+            ) : (
+              <OAuthBody
+                providerName={providerName}
+                info={info}
+                status={status}
+                colors={colors}
+                onCancel={handleClose}
+                onConnect={handleConnectOAuth}
+                working={working}
+                errorMsg={errorMsg}
+                reducedMotion={settings.reducedMotion}
+              />
+            )}
           </Pressable>
         </KeyboardAvoidingView>
       </Pressable>
     </Modal>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// OAuth body — status-aware. NO password / handle text-input fields.
+// ---------------------------------------------------------------------------
+interface OAuthBodyProps {
+  providerName: string;
+  info: OAuthProviderInfo | undefined;
+  status: OAuthProviderStatus;
+  colors: ReturnType<typeof useColors>;
+  onCancel: () => void;
+  onConnect: () => void;
+  working: boolean;
+  errorMsg: string | null;
+  reducedMotion: boolean;
+}
+
+function OAuthBody({
+  providerName,
+  info,
+  status,
+  colors,
+  onCancel,
+  onConnect,
+  working,
+  errorMsg,
+  reducedMotion,
+}: OAuthBodyProps) {
+  const showStatusBadge = status !== "configured";
+  const badgeLabel =
+    status === "setup_required"
+      ? "Setup required"
+      : status === "coming_soon"
+        ? "Coming soon · API setup required"
+        : "";
+
+  return (
+    <>
+      {showStatusBadge ? (
+        <View
+          style={[
+            styles.roadmapBadge,
+            {
+              backgroundColor: "rgba(84, 79, 77, 0.06)",
+              borderColor: "rgba(84, 79, 77, 0.25)",
+            },
+          ]}
+        >
+          <Feather name="clock" size={12} color={colors.coolGrey} />
+          <Text style={[styles.roadmapText, { color: colors.coolGrey }]}>
+            {badgeLabel}
+          </Text>
+        </View>
+      ) : null}
+
+      <View
+        style={[
+          styles.note,
+          { backgroundColor: colors.secondary, borderColor: colors.border },
+        ]}
+      >
+        <Feather name="shield" size={14} color={colors.radarBlue} />
+        <Text style={[styles.noteText, { color: colors.secondaryForeground }]}>
+          You will be redirected to the provider. We never see your password.
+        </Text>
+      </View>
+
+      {info?.setupNotes && status !== "configured" ? (
+        <View
+          style={[
+            styles.note,
+            {
+              backgroundColor: colors.surfaceElevated,
+              borderColor: colors.border,
+            },
+          ]}
+        >
+          <Feather name="info" size={14} color={colors.coolGrey} />
+          <Text
+            style={[styles.noteText, { color: colors.mutedForeground }]}
+          >
+            {info.setupNotes}
+          </Text>
+        </View>
+      ) : null}
+
+      {errorMsg ? (
+        <View
+          style={[
+            styles.note,
+            {
+              backgroundColor: "rgba(220, 38, 38, 0.08)",
+              borderColor: "rgba(220, 38, 38, 0.35)",
+            },
+          ]}
+        >
+          <Feather name="alert-triangle" size={14} color={colors.destructive} />
+          <Text style={[styles.noteText, { color: colors.destructive }]}>
+            {errorMsg}
+          </Text>
+        </View>
+      ) : null}
+
+      <View style={styles.buttonRow}>
+        <Pressable
+          onPress={onCancel}
+          style={({ pressed }) => [
+            styles.button,
+            styles.secondaryBtn,
+            {
+              backgroundColor: "#FFFFFF",
+              borderColor: colors.radarBlue,
+              opacity: pressed ? 0.8 : 1,
+            },
+          ]}
+        >
+          <Text style={[styles.buttonText, { color: colors.radarBlue }]}>
+            {status === "configured" ? "Cancel" : "Close"}
+          </Text>
+        </Pressable>
+        {status === "configured" ? (
+          <Pressable
+            onPress={onConnect}
+            disabled={working}
+            style={({ pressed }) => [
+              styles.button,
+              styles.primaryBtn,
+              {
+                backgroundColor: colors.radarBlue,
+                opacity: working ? 0.6 : pressed ? 0.85 : 1,
+              },
+            ]}
+          >
+            {working ? (
+              <View style={styles.connectingRow}>
+                <RadarSpinner
+                  size={16}
+                  color={colors.primaryForeground}
+                  reducedMotion={reducedMotion}
+                />
+                <Text
+                  style={[
+                    styles.buttonText,
+                    { color: colors.primaryForeground },
+                  ]}
+                >
+                  Opening provider…
+                </Text>
+              </View>
+            ) : (
+              <Text
+                style={[
+                  styles.buttonText,
+                  { color: colors.primaryForeground },
+                ]}
+              >
+                {`Continue to ${providerName}`}
+              </Text>
+            )}
+          </Pressable>
+        ) : (
+          <View
+            style={[
+              styles.button,
+              styles.primaryBtn,
+              {
+                backgroundColor: colors.surfaceElevated,
+                borderColor: colors.border,
+                borderWidth: 1,
+              },
+            ]}
+          >
+            <Text style={[styles.buttonText, { color: colors.mutedForeground }]}>
+              {status === "setup_required" ? "Awaiting credentials" : "Not yet available"}
+            </Text>
+          </View>
+        )}
+      </View>
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Delivery body — manual tracking-number entry (not OAuth)
+// ---------------------------------------------------------------------------
+interface DeliveryBodyProps {
+  providerName: string;
+  trackingNumber: string;
+  setTrackingNumber: (v: string) => void;
+  label: string;
+  setLabel: (v: string) => void;
+  merchant: string;
+  setMerchant: (v: string) => void;
+  colors: ReturnType<typeof useColors>;
+  onCancel: () => void;
+  onSubmit: () => void;
+  disabled: boolean;
+  working: boolean;
+  reducedMotion: boolean;
+}
+
+function DeliveryBody({
+  providerName,
+  trackingNumber,
+  setTrackingNumber,
+  label,
+  setLabel,
+  merchant,
+  setMerchant,
+  colors,
+  onCancel,
+  onSubmit,
+  disabled,
+  working,
+  reducedMotion,
+}: DeliveryBodyProps) {
+  return (
+    <>
+      <View
+        style={[
+          styles.note,
+          { backgroundColor: colors.secondary, borderColor: colors.border },
+        ]}
+      >
+        <Feather name="package" size={14} color={colors.radarBlue} />
+        <Text style={[styles.noteText, { color: colors.secondaryForeground }]}>
+          Paste the tracking number for your parcel. We never ask for your
+          courier-account password.
+        </Text>
+      </View>
+
+      <Text style={[styles.label, { color: colors.mutedForeground }]}>
+        Tracking number
+      </Text>
+      <TextInput
+        value={trackingNumber}
+        onChangeText={setTrackingNumber}
+        placeholder="Paste your tracking number"
+        placeholderTextColor={colors.mutedForeground}
+        autoCapitalize="none"
+        autoCorrect={false}
+        style={[
+          styles.input,
+          {
+            backgroundColor: colors.surfaceElevated,
+            color: colors.foreground,
+            borderColor: colors.border,
+          },
+        ]}
+      />
+
+      <Text style={[styles.label, { color: colors.mutedForeground }]}>
+        Order label
+      </Text>
+      <TextInput
+        value={label}
+        onChangeText={setLabel}
+        placeholder="e.g. New running shoes"
+        placeholderTextColor={colors.mutedForeground}
+        autoCapitalize="sentences"
+        style={[
+          styles.input,
+          {
+            backgroundColor: colors.surfaceElevated,
+            color: colors.foreground,
+            borderColor: colors.border,
+          },
+        ]}
+      />
+
+      <Text style={[styles.label, { color: colors.mutedForeground }]}>
+        Merchant (optional)
+      </Text>
+      <TextInput
+        value={merchant}
+        onChangeText={setMerchant}
+        placeholder="e.g. ASOS, Etsy, Amazon"
+        placeholderTextColor={colors.mutedForeground}
+        autoCapitalize="words"
+        style={[
+          styles.input,
+          {
+            backgroundColor: colors.surfaceElevated,
+            color: colors.foreground,
+            borderColor: colors.border,
+          },
+        ]}
+      />
+
+      <View style={styles.buttonRow}>
+        <Pressable
+          onPress={onCancel}
+          style={({ pressed }) => [
+            styles.button,
+            styles.secondaryBtn,
+            {
+              backgroundColor: "#FFFFFF",
+              borderColor: colors.radarBlue,
+              opacity: pressed ? 0.8 : 1,
+            },
+          ]}
+        >
+          <Text style={[styles.buttonText, { color: colors.radarBlue }]}>
+            Cancel
+          </Text>
+        </Pressable>
+        <Pressable
+          onPress={onSubmit}
+          disabled={disabled}
+          style={({ pressed }) => [
+            styles.button,
+            styles.primaryBtn,
+            {
+              backgroundColor: colors.radarBlue,
+              opacity: disabled ? 0.5 : pressed ? 0.85 : 1,
+            },
+          ]}
+        >
+          {working ? (
+            <View style={styles.connectingRow}>
+              <RadarSpinner
+                size={16}
+                color={colors.primaryForeground}
+                reducedMotion={reducedMotion}
+              />
+              <Text
+                style={[
+                  styles.buttonText,
+                  { color: colors.primaryForeground },
+                ]}
+              >
+                Adding…
+              </Text>
+            </View>
+          ) : (
+            <Text
+              style={[
+                styles.buttonText,
+                { color: colors.primaryForeground },
+              ]}
+            >
+              {`Track ${providerName}`}
+            </Text>
+          )}
+        </Pressable>
+      </View>
+    </>
   );
 }
 
@@ -657,64 +731,38 @@ const styles = StyleSheet.create({
     lineHeight: 17,
     fontFamily: "Inter_500Medium",
   },
-  scopesRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 4,
-    marginTop: -4,
-  },
-  scopesText: {
-    fontSize: 11,
-    fontFamily: "Inter_500Medium",
-    letterSpacing: 0.2,
-  },
   label: {
-    fontSize: 12,
-    fontFamily: "Inter_600SemiBold",
-    textTransform: "uppercase",
+    fontSize: 11,
     letterSpacing: 0.6,
+    fontFamily: "Inter_700Bold",
+    marginTop: 2,
   },
   input: {
     borderWidth: 1,
     borderRadius: 14,
     paddingHorizontal: 14,
-    paddingVertical: 14,
-    fontSize: 16,
+    paddingVertical: 12,
+    fontSize: 14,
     fontFamily: "Inter_500Medium",
-  },
-  kindRow: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  kindChip: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 12,
-    borderWidth: 1,
-    alignItems: "center",
-  },
-  kindChipText: {
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 13,
   },
   buttonRow: {
     flexDirection: "row",
     gap: 10,
-    marginTop: 4,
+    marginTop: 6,
   },
   button: {
     flex: 1,
-    paddingVertical: 14,
+    height: 48,
     borderRadius: 14,
     alignItems: "center",
-  },
-  secondaryBtn: {
-    borderWidth: 1.5,
+    justifyContent: "center",
   },
   primaryBtn: {},
+  secondaryBtn: {
+    borderWidth: 1,
+  },
   buttonText: {
-    fontSize: 15,
+    fontSize: 14,
     fontFamily: "Inter_700Bold",
   },
   connectingRow: {

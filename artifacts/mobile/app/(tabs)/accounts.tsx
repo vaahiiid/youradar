@@ -23,11 +23,11 @@ import { RadarSpinner } from "@/components/RadarSpinner";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { useInbox } from "@/context/InboxContext";
 import { useColors } from "@/hooks/useColors";
+import { useOAuthProviders } from "@/hooks/useOAuthProviders";
 import {
   CATEGORY_LABELS,
   PROVIDER_LABELS,
   isDeliveryProvider,
-  isProviderImplemented,
   providersInCategory,
   type Provider,
   type ProviderCategory,
@@ -41,7 +41,6 @@ export default function AccountsScreen() {
   const {
     accounts,
     unseenByAccount,
-    connectAccount,
     addDelivery,
     disconnectAccount,
     reconnectAccount,
@@ -49,6 +48,7 @@ export default function AccountsScreen() {
     toggleAccountNotifications,
     settings,
   } = useInbox();
+  const { byId: providerStatusById } = useOAuthProviders();
   const [sheetProvider, setSheetProvider] = useState<Provider | null>(null);
   const [feedback, setFeedback] = useState<{
     tone: "info" | "warn";
@@ -85,26 +85,6 @@ export default function AccountsScreen() {
     setRenameTarget(null);
   };
 
-  const handleConnect = (
-    p: Provider,
-    value: string,
-    extras?: { instagramKind?: import("@/types").InstagramAccountKind; nickname?: string },
-  ) => {
-    const result = connectAccount(p, value, extras);
-    if (result.status === "duplicate") {
-      setFeedback({
-        tone: "warn",
-        message: `${PROVIDER_LABELS[p]} · ${result.account.emailAddress} is already connected.`,
-      });
-    } else if (result.status === "invalid") {
-      setFeedback({ tone: "warn", message: result.reason });
-    } else {
-      setFeedback({
-        tone: "info",
-        message: `Connected ${result.account.displayName} (${PROVIDER_LABELS[p]}).`,
-      });
-    }
-  };
 
   const confirmDisconnect = (id: string, label: string) => {
     if (Platform.OS === "web") {
@@ -174,11 +154,18 @@ export default function AccountsScreen() {
             <View style={styles.providerGrid}>
               {providersInCategory(category).map((p) => {
                 // Delivery providers always show the real tracking flow (the
-                // ConnectAccountSheet branches on isDelivery), so they should
-                // never show the violet "API setup required" pill on the
-                // tile preview.
-                const implemented =
-                  isProviderImplemented(p) || isDeliveryProvider(p);
+                // ConnectAccountSheet branches on isDelivery), so they keep
+                // the "Tap to track" affordance regardless of OAuth catalog.
+                const isDelivery = isDeliveryProvider(p);
+                const status = providerStatusById[p]?.status;
+                const tileMode: "ready" | "setup_required" | "coming_soon" =
+                  isDelivery
+                    ? "ready"
+                    : status === "configured"
+                      ? "ready"
+                      : status === "setup_required"
+                        ? "setup_required"
+                        : "coming_soon";
                 const connected = accountsByProvider(p).length;
                 return (
                   <Pressable
@@ -203,7 +190,20 @@ export default function AccountsScreen() {
                       >
                         {PROVIDER_LABELS[p]}
                       </Text>
-                      {!implemented ? (
+                      {tileMode === "ready" ? (
+                        <Text
+                          style={[
+                            styles.providerTileMeta,
+                            { color: colors.mutedForeground },
+                          ]}
+                        >
+                          {connected > 0
+                            ? `${connected} connected`
+                            : category === "delivery"
+                              ? "Tap to track"
+                              : "Tap to connect"}
+                        </Text>
+                      ) : (
                         <View
                           style={[
                             styles.roadmapPill,
@@ -220,22 +220,11 @@ export default function AccountsScreen() {
                               { color: colors.coolGrey },
                             ]}
                           >
-                            API setup required
+                            {tileMode === "setup_required"
+                              ? "Setup required"
+                              : "Coming soon"}
                           </Text>
                         </View>
-                      ) : (
-                        <Text
-                          style={[
-                            styles.providerTileMeta,
-                            { color: colors.mutedForeground },
-                          ]}
-                        >
-                          {connected > 0
-                            ? `${connected} connected`
-                            : category === "delivery"
-                              ? "Tap to track"
-                              : "Tap to connect"}
-                        </Text>
                       )}
                     </View>
                     <Feather
@@ -415,7 +404,6 @@ export default function AccountsScreen() {
         visible={sheetProvider !== null}
         provider={sheetProvider}
         onClose={() => setSheetProvider(null)}
-        onConnect={(p, value, extras) => handleConnect(p, value, extras)}
         onAddDelivery={(p, details) => addDelivery(p, details)}
       />
 
