@@ -1,7 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   Platform,
   Pressable,
@@ -46,6 +46,7 @@ export default function DashboardScreen() {
     unseenTotal,
     unseenByAccount,
     unseenByProvider,
+    connectedProviders,
     simulateIncoming,
     settings,
   } = useInbox();
@@ -68,6 +69,9 @@ export default function DashboardScreen() {
   const simChips: SimChip[] = [
     { id: "gmail", label: "Gmail", provider: "gmail" },
     { id: "outlook", label: "Outlook", provider: "outlook" },
+    { id: "yahoo", label: "Yahoo", provider: "yahoo" },
+    { id: "aol", label: "AOL", provider: "aol" },
+    { id: "hotmail", label: "Hotmail", provider: "hotmail" },
     { id: "ig-dm", label: "IG · DM", provider: "instagram", instagramKind: "dm" },
     {
       id: "ig-comment",
@@ -92,16 +96,30 @@ export default function DashboardScreen() {
     { id: "telegram", label: "Telegram", provider: "telegram" },
     { id: "whatsapp", label: "WhatsApp", provider: "whatsapp" },
     { id: "tiktok", label: "TikTok", provider: "tiktok" },
+    { id: "x", label: "X", provider: "x" },
+    { id: "evri", label: "Evri", provider: "evri" },
+    { id: "dpd", label: "DPD", provider: "dpd" },
+    { id: "royalmail", label: "Royal Mail", provider: "royalmail" },
+    { id: "amazon", label: "Amazon", provider: "amazon" },
   ];
+
+  // Visibility rule: hero summary grid only includes providers that have at
+  // least one connected account OR have at least one historical notification.
+  const visibleProviders = useMemo<Provider[]>(() => {
+    const set = new Set<Provider>(connectedProviders);
+    for (const n of notifications) set.add(n.provider);
+    return PROVIDER_ORDER.filter((p) => set.has(p));
+  }, [connectedProviders, notifications]);
 
   const bottomPad = (Platform.OS === "web" ? 100 : insets.bottom + 80) + 24;
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       <ScreenHeader
-        title="Radar"
+        title="My Radar"
         subtitle="Every signal, on your radar"
         showBrand
+        compactTitle
         right={
           <Pressable
             onPress={() => router.push("/(tabs)/notifications")}
@@ -157,58 +175,56 @@ export default function DashboardScreen() {
           </View>
         </View>
 
-        <View style={styles.providerSummaryGrid}>
-          {PROVIDER_ORDER.map((p) => {
-            const count = accounts.filter((a) => a.provider === p).length;
-            const unread = unseenByProvider[p];
-            return (
-              <View
-                key={p}
-                style={[
-                  styles.providerSummary,
-                  {
-                    backgroundColor: colors.card,
-                    borderColor: colors.border,
-                  },
-                ]}
-              >
-                <View style={styles.providerSummaryHead}>
-                  <ProviderIcon provider={p} size={22} />
-                  {unread > 0 ? (
-                    <View
-                      style={[
-                        styles.unreadPill,
-                        { backgroundColor: colors.destructive },
-                      ]}
-                    >
-                      <Text style={styles.unreadPillText}>{unread}</Text>
-                    </View>
-                  ) : null}
+        {visibleProviders.length > 0 ? (
+          <View style={styles.providerSummaryGrid}>
+            {visibleProviders.map((p) => {
+              const count = accounts.filter((a) => a.provider === p).length;
+              const unread = unseenByProvider[p];
+              return (
+                <View
+                  key={p}
+                  style={[
+                    styles.providerSummary,
+                    {
+                      backgroundColor: colors.card,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
+                  <View style={styles.providerSummaryHead}>
+                    <ProviderIcon provider={p} size={22} />
+                    {unread > 0 ? (
+                      <View
+                        style={[
+                          styles.unreadPill,
+                          { backgroundColor: colors.destructive },
+                        ]}
+                      >
+                        <Text style={styles.unreadPillText}>{unread}</Text>
+                      </View>
+                    ) : null}
+                  </View>
+                  <Text
+                    style={[
+                      styles.providerSummaryLabel,
+                      { color: colors.foreground },
+                    ]}
+                  >
+                    {PROVIDER_LABELS[p]}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.providerSummaryMeta,
+                      { color: colors.mutedForeground },
+                    ]}
+                  >
+                    {count > 0 ? `${count} connected` : "Recent activity"}
+                  </Text>
                 </View>
-                <Text
-                  style={[
-                    styles.providerSummaryLabel,
-                    { color: colors.foreground },
-                  ]}
-                >
-                  {PROVIDER_LABELS[p]}
-                </Text>
-                <Text
-                  style={[
-                    styles.providerSummaryMeta,
-                    { color: colors.mutedForeground },
-                  ]}
-                >
-                  {count > 0
-                    ? `${count} connected`
-                    : count === 0 && (p === "gmail" || p === "outlook" || p === "instagram")
-                      ? "Not connected"
-                      : "Not set up"}
-                </Text>
-              </View>
-            );
-          })}
-        </View>
+              );
+            })}
+          </View>
+        ) : null}
 
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, { color: colors.foreground }]}>

@@ -16,7 +16,11 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ProviderIcon } from "@/components/ProviderIcon";
 import { getInstagramEventLabel, useInbox } from "@/context/InboxContext";
 import { useColors } from "@/hooks/useColors";
-import { PROVIDER_LABELS } from "@/types";
+import {
+  DELIVERY_STATUS_LABELS,
+  PROVIDER_LABELS,
+  isDeliveryProvider,
+} from "@/types";
 import { formatFullDate, getInitials } from "@/utils/format";
 
 export default function NotificationDetailScreen() {
@@ -67,7 +71,10 @@ export default function NotificationDetailScreen() {
     isInstagram ||
     notification.provider === "linkedin" ||
     notification.provider === "telegram" ||
-    notification.provider === "tiktok";
+    notification.provider === "tiktok" ||
+    notification.provider === "x";
+  const isDelivery = isDeliveryProvider(notification.provider);
+  const deliveryDetails = account?.deliveryDetails;
 
   const openInProvider = async () => {
     if (!notification.providerWebLink) return;
@@ -114,6 +121,18 @@ export default function NotificationDetailScreen() {
               </Text>
             </View>
           ) : null}
+          {isDelivery && notification.deliveryStatus ? (
+            <View
+              style={[
+                styles.tag,
+                { backgroundColor: colors.secondary },
+              ]}
+            >
+              <Text style={[styles.tagText, { color: colors.radarBlue }]}>
+                {DELIVERY_STATUS_LABELS[notification.deliveryStatus]}
+              </Text>
+            </View>
+          ) : null}
           <Text style={[styles.metaText, { color: colors.mutedForeground }]}>
             {formatFullDate(notification.receivedAt)}
           </Text>
@@ -154,6 +173,45 @@ export default function NotificationDetailScreen() {
             </Text>
           </View>
         </View>
+
+        {isDelivery && deliveryDetails ? (
+          <View
+            style={[
+              styles.bodyCard,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+          >
+            <Text style={[styles.bodyLabel, { color: colors.mutedForeground }]}>
+              Delivery details
+            </Text>
+            <View style={styles.deliveryRow}>
+              <Feather name="package" size={14} color={colors.radarBlue} />
+              <Text style={[styles.deliveryText, { color: colors.foreground }]}>
+                {deliveryDetails.label}
+              </Text>
+            </View>
+            <View style={styles.deliveryRow}>
+              <Feather name="hash" size={14} color={colors.mutedForeground} />
+              <Text style={[styles.deliveryText, { color: colors.foreground }]}>
+                {deliveryDetails.trackingNumber}
+              </Text>
+            </View>
+            {deliveryDetails.merchant ? (
+              <View style={styles.deliveryRow}>
+                <Feather name="shopping-bag" size={14} color={colors.mutedForeground} />
+                <Text style={[styles.deliveryText, { color: colors.foreground }]}>
+                  {deliveryDetails.merchant}
+                </Text>
+              </View>
+            ) : null}
+            <View style={styles.deliveryRow}>
+              <Feather name="activity" size={14} color={colors.success} />
+              <Text style={[styles.deliveryText, { color: colors.foreground }]}>
+                Status: {DELIVERY_STATUS_LABELS[deliveryDetails.status]}
+              </Text>
+            </View>
+          </View>
+        ) : null}
 
         {notification.mediaCaption ? (
           <View
@@ -399,5 +457,15 @@ const styles = StyleSheet.create({
   missingText: {
     fontFamily: "Inter_600SemiBold",
     fontSize: 16,
+  },
+  deliveryRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 6,
+  },
+  deliveryText: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 13,
   },
 });

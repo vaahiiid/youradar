@@ -14,9 +14,9 @@ interface RadarLoaderProps {
 }
 
 const SIZES = {
-  sm: { radar: 96, logo: 14, fontSize: 12 },
-  md: { radar: 160, logo: 18, fontSize: 13 },
-  lg: { radar: 220, logo: 26, fontSize: 14 },
+  sm: { radar: 96, logo: 20, fontSize: 12 },
+  md: { radar: 160, logo: 28, fontSize: 13 },
+  lg: { radar: 220, logo: 40, fontSize: 14 },
 };
 
 export function RadarLoader({

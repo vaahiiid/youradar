@@ -85,7 +85,7 @@ export function LoadingScreen({ onComplete, durationMs = 2400 }: LoadingScreenPr
         <View style={styles.radarStack}>
           <RadarPulse size={300} reducedMotion={reducedMotion} />
           <View style={styles.logoBadge} pointerEvents="none">
-            <BrandLogo height={36} tintColor={colors.light.brandNavy} />
+            <BrandLogo height={56} tintColor={colors.light.brandNavy} />
           </View>
         </View>
 
@@ -141,9 +141,9 @@ const styles = StyleSheet.create({
   },
   logoBadge: {
     position: "absolute",
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 16,
+    paddingHorizontal: 22,
+    paddingVertical: 14,
+    borderRadius: 18,
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
     borderColor: "rgba(47, 128, 237, 0.35)",

@@ -17,6 +17,7 @@ import { useColors } from "@/hooks/useColors";
 import { useInbox } from "@/context/InboxContext";
 import {
   PROVIDER_LABELS,
+  isDeliveryProvider,
   isProviderImplemented,
   type ConnectedAccount,
   type Provider,
@@ -30,6 +31,14 @@ interface ConnectAccountSheetProps {
     provider: Provider,
     handleOrEmail: string,
     extras?: { instagramKind?: ConnectedAccount["instagramKind"] },
+  ) => void;
+  onAddDelivery?: (
+    provider: Provider,
+    details: {
+      trackingNumber: string;
+      label: string;
+      merchant?: string;
+    },
   ) => void;
 }
 
@@ -59,7 +68,7 @@ function getProviderCopy(provider: Provider): ProviderCopy {
         validation: (v) => v.trim().includes("@"),
         blurb: "Add another inbox to your unified feed",
         apiNote:
-          "In production this opens secure Google OAuth (Gmail API). YourRadar requests read-only metadata scopes only.",
+          "In production this opens secure Google OAuth (Gmail API). My Radar requests read-only metadata scopes only.",
         scopesHint: "Inbox · labels · read-only metadata",
       };
     case "outlook":
@@ -70,7 +79,40 @@ function getProviderCopy(provider: Provider): ProviderCopy {
         validation: (v) => v.trim().includes("@"),
         blurb: "Add another inbox to your unified feed",
         apiNote:
-          "In production this opens secure Microsoft OAuth (Microsoft Graph API). YourRadar requests Mail.Read scope only.",
+          "In production this opens secure Microsoft OAuth (Microsoft Graph API). My Radar requests Mail.Read scope only.",
+        scopesHint: "Inbox · folders · read-only mail",
+      };
+    case "yahoo":
+      return {
+        inputLabel: "Yahoo Mail address",
+        inputPlaceholder: "you@yahoo.com",
+        keyboard: "email-address",
+        validation: (v) => v.trim().includes("@"),
+        blurb: "Receive Yahoo Mail signal alerts",
+        apiNote:
+          "Yahoo Mail uses secure Yahoo OAuth where available. We never ask for your password and never enable insecure IMAP password access.",
+        scopesHint: "Mail · read-only inbox metadata",
+      };
+    case "aol":
+      return {
+        inputLabel: "AOL Mail address",
+        inputPlaceholder: "you@aol.com",
+        keyboard: "email-address",
+        validation: (v) => v.trim().includes("@"),
+        blurb: "Add an AOL inbox to your unified feed",
+        apiNote:
+          "AOL Mail uses secure OAuth where available. We never ask for your password and never store raw email credentials.",
+        scopesHint: "Mail · read-only inbox metadata",
+      };
+    case "hotmail":
+      return {
+        inputLabel: "Hotmail / Outlook.com address",
+        inputPlaceholder: "you@hotmail.com",
+        keyboard: "email-address",
+        validation: (v) => v.trim().includes("@"),
+        blurb: "Hotmail and Outlook.com via Microsoft Graph",
+        apiNote:
+          "Hotmail and Outlook.com use Microsoft Graph through secure Microsoft OAuth. My Radar requests Mail.Read scope only.",
         scopesHint: "Inbox · folders · read-only mail",
       };
     case "instagram":
@@ -139,6 +181,31 @@ function getProviderCopy(provider: Provider): ProviderCopy {
           "TikTok integrations use the official TikTok for Developers APIs. Available events depend on creator/business account access and app review approval. We never scrape TikTok.",
         scopesHint: "Comments · follows · video performance (where supported)",
       };
+    case "x":
+      return {
+        inputLabel: "X handle",
+        inputPlaceholder: "@yourhandle",
+        keyboard: "default",
+        validation: (v) => v.trim().length >= 2,
+        blurb: "Track mentions and engagement on X",
+        apiNote:
+          "X integrations use the official X API. Available events depend on your X developer access tier. We never scrape X or ask for your password.",
+        scopesHint: "Mentions · engagement · post performance (where supported)",
+      };
+    case "evri":
+    case "dpd":
+    case "royalmail":
+    case "amazon":
+      return {
+        inputLabel: "Tracking number",
+        inputPlaceholder: "Paste your tracking number",
+        keyboard: "default",
+        validation: (v) => v.trim().length >= 4,
+        blurb: "Track a delivery and get status alerts",
+        apiNote:
+          "Delivery tracking uses official courier APIs and webhooks where available. We never scrape courier accounts or ask for courier passwords. If a courier API isn't available we fall back to manual tracking with status alerts.",
+        scopesHint: "Status updates · estimated delivery · exception alerts",
+      };
   }
 }
 
@@ -147,10 +214,13 @@ export function ConnectAccountSheet({
   provider,
   onClose,
   onConnect,
+  onAddDelivery,
 }: ConnectAccountSheetProps) {
   const colors = useColors();
   const { settings } = useInbox();
   const [value, setValue] = useState("");
+  const [label, setLabel] = useState("");
+  const [merchant, setMerchant] = useState("");
   const [kind, setKind] =
     useState<ConnectedAccount["instagramKind"]>("creator");
   const [connecting, setConnecting] = useState(false);
@@ -177,6 +247,8 @@ export function ConnectAccountSheet({
 
   const reset = () => {
     setValue("");
+    setLabel("");
+    setMerchant("");
     setKind("creator");
   };
 
@@ -190,26 +262,38 @@ export function ConnectAccountSheet({
 
   const copy = getProviderCopy(provider);
   const isInstagram = provider === "instagram";
+  const isDelivery = isDeliveryProvider(provider);
   const isImplemented = isProviderImplemented(provider);
-  const isValid = copy.validation(value);
+  const isValid =
+    copy.validation(value) && (!isDelivery || label.trim().length >= 1);
 
   const handleConnect = () => {
     if (!provider || !isValid || connecting) return;
     setConnecting(true);
     const submittedProvider = provider;
     const submittedValue = value.trim();
+    const submittedLabel = label.trim();
+    const submittedMerchant = merchant.trim();
     const submittedKind = kind;
     timerRef.current = setTimeout(() => {
       timerRef.current = null;
-      onConnect(
-        submittedProvider,
-        submittedValue,
-        isInstagram ? { instagramKind: submittedKind } : undefined,
-      );
+      if (isDelivery && onAddDelivery) {
+        onAddDelivery(submittedProvider, {
+          trackingNumber: submittedValue,
+          label: submittedLabel,
+          merchant: submittedMerchant || undefined,
+        });
+      } else {
+        onConnect(
+          submittedProvider,
+          submittedValue,
+          isInstagram ? { instagramKind: submittedKind } : undefined,
+        );
+      }
       reset();
       setConnecting(false);
       onClose();
-    }, 750);
+    }, 600);
   };
 
   const providerName = PROVIDER_LABELS[provider];
@@ -244,7 +328,7 @@ export function ConnectAccountSheet({
               <ProviderIcon provider={provider} size={48} />
               <View style={{ flex: 1 }}>
                 <Text style={[styles.title, { color: colors.foreground }]}>
-                  Connect {providerName}
+                  {isDelivery ? `Track ${providerName}` : `Connect ${providerName}`}
                 </Text>
                 <Text
                   style={[styles.subtitle, { color: colors.mutedForeground }]}
@@ -254,7 +338,7 @@ export function ConnectAccountSheet({
               </View>
             </View>
 
-            {!isImplemented ? (
+            {!isImplemented && !isDelivery ? (
               <View
                 style={[
                   styles.roadmapBadge,
@@ -312,6 +396,47 @@ export function ConnectAccountSheet({
                 },
               ]}
             />
+
+            {isDelivery ? (
+              <>
+                <Text style={[styles.label, { color: colors.mutedForeground }]}>
+                  Order label
+                </Text>
+                <TextInput
+                  value={label}
+                  onChangeText={setLabel}
+                  placeholder="e.g. New running shoes"
+                  placeholderTextColor={colors.mutedForeground}
+                  autoCapitalize="sentences"
+                  style={[
+                    styles.input,
+                    {
+                      backgroundColor: colors.surfaceElevated,
+                      color: colors.foreground,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                />
+                <Text style={[styles.label, { color: colors.mutedForeground }]}>
+                  Merchant (optional)
+                </Text>
+                <TextInput
+                  value={merchant}
+                  onChangeText={setMerchant}
+                  placeholder="e.g. ASOS, Etsy, Amazon"
+                  placeholderTextColor={colors.mutedForeground}
+                  autoCapitalize="words"
+                  style={[
+                    styles.input,
+                    {
+                      backgroundColor: colors.surfaceElevated,
+                      color: colors.foreground,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                />
+              </>
+            ) : null}
 
             {isInstagram ? (
               <>
@@ -401,7 +526,7 @@ export function ConnectAccountSheet({
                         { color: colors.primaryForeground },
                       ]}
                     >
-                      Connecting...
+                      {isDelivery ? "Adding..." : "Connecting..."}
                     </Text>
                   </View>
                 ) : (
@@ -411,7 +536,11 @@ export function ConnectAccountSheet({
                       { color: colors.primaryForeground },
                     ]}
                   >
-                    {isImplemented ? "Connect" : "Add to roadmap"}
+                    {isDelivery
+                      ? `Track ${providerName}`
+                      : isImplemented
+                        ? "Connect"
+                        : "Add to roadmap"}
                   </Text>
                 )}
               </Pressable>

@@ -27,7 +27,8 @@ export default function NotificationsScreen() {
   const colors = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { notifications, unseenTotal, markAllSeen, settings } = useInbox();
+  const { notifications, unseenTotal, markAllSeen, settings, connectedProviders } =
+    useInbox();
   const [filter, setFilter] = useState<Filter>("all");
   const [initialScanning, setInitialScanning] = useState(true);
 
@@ -36,16 +37,24 @@ export default function NotificationsScreen() {
     return () => clearTimeout(t);
   }, []);
 
+  // Visibility rule: filter chips only show providers that are either
+  // connected on this device OR have at least one historical notification.
+  const visibleProviders = useMemo<Provider[]>(() => {
+    const set = new Set<Provider>(connectedProviders);
+    for (const n of notifications) set.add(n.provider);
+    return PROVIDER_ORDER.filter((p) => set.has(p));
+  }, [connectedProviders, notifications]);
+
   const filters: { id: Filter; label: string }[] = useMemo(
     () => [
       { id: "all", label: "All" },
       { id: "unread", label: "Unread" },
-      ...PROVIDER_ORDER.map((p) => ({
+      ...visibleProviders.map((p) => ({
         id: p as Filter,
         label: PROVIDER_LABELS[p],
       })),
     ],
-    [],
+    [visibleProviders],
   );
 
   const filtered = useMemo(() => {

@@ -11,6 +11,8 @@ interface ScreenHeaderProps {
   subtitle?: string;
   right?: React.ReactNode;
   showBrand?: boolean;
+  /** Tone down the screen heading when the brand is the primary mark. */
+  compactTitle?: boolean;
 }
 
 export function ScreenHeader({
@@ -18,6 +20,7 @@ export function ScreenHeader({
   subtitle,
   right,
   showBrand,
+  compactTitle,
 }: ScreenHeaderProps) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -29,16 +32,21 @@ export function ScreenHeader({
         <View style={styles.brandRow}>
           <View style={styles.brandLeft}>
             <View style={styles.miniRadar}>
-              <RadarPulse size={26} rings={2} showSweep={false} />
+              <RadarPulse size={36} rings={2} showSweep={false} />
             </View>
-            <BrandLogo height={20} tintColor={colors.brandNavy} />
+            <BrandLogo height={28} tintColor={colors.brandNavy} />
           </View>
           {right}
         </View>
       ) : null}
       <View style={styles.row}>
         <View style={{ flex: 1 }}>
-          <Text style={[styles.title, { color: colors.foreground }]}>
+          <Text
+            style={[
+              compactTitle ? styles.titleCompact : styles.title,
+              { color: colors.foreground },
+            ]}
+          >
             {title}
           </Text>
           {subtitle ? (
@@ -70,8 +78,8 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   miniRadar: {
-    width: 26,
-    height: 26,
+    width: 36,
+    height: 36,
   },
   row: {
     flexDirection: "row",
@@ -82,6 +90,11 @@ const styles = StyleSheet.create({
     fontSize: 30,
     fontFamily: "Inter_700Bold",
     letterSpacing: -0.5,
+  },
+  titleCompact: {
+    fontSize: 22,
+    fontFamily: "Inter_700Bold",
+    letterSpacing: -0.4,
   },
   subtitle: {
     fontSize: 14,

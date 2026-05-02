@@ -21,11 +21,16 @@ import { ScreenHeader } from "@/components/ScreenHeader";
 import { useInbox } from "@/context/InboxContext";
 import { useColors } from "@/hooks/useColors";
 import {
+  CATEGORY_LABELS,
   PROVIDER_LABELS,
-  PROVIDER_ORDER,
+  isDeliveryProvider,
   isProviderImplemented,
+  providersInCategory,
   type Provider,
+  type ProviderCategory,
 } from "@/types";
+
+const CATEGORY_ORDER: ProviderCategory[] = ["email", "social", "delivery"];
 
 export default function AccountsScreen() {
   const colors = useColors();
@@ -34,6 +39,7 @@ export default function AccountsScreen() {
     accounts,
     unseenByAccount,
     connectAccount,
+    addDelivery,
     disconnectAccount,
     reconnectAccount,
     toggleAccountNotifications,
@@ -69,7 +75,7 @@ export default function AccountsScreen() {
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       <ScreenHeader
         title="Sources"
-        subtitle="Email, social, and more — unified"
+        subtitle="Email, social, and deliveries — unified"
       />
 
       <ScrollView
@@ -98,70 +104,92 @@ export default function AccountsScreen() {
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
           ADD A SOURCE
         </Text>
-        <View style={styles.providerGrid}>
-          {PROVIDER_ORDER.map((p) => {
-            const implemented = isProviderImplemented(p);
-            return (
-              <Pressable
-                key={p}
-                onPress={() => setSheetProvider(p)}
-                style={({ pressed }) => [
-                  styles.providerTile,
-                  {
-                    backgroundColor: colors.card,
-                    borderColor: colors.border,
-                    opacity: pressed ? 0.88 : 1,
-                  },
-                ]}
-              >
-                <ProviderIcon provider={p} size={36} />
-                <View style={styles.providerTileBody}>
-                  <Text
-                    style={[
-                      styles.providerTileLabel,
-                      { color: colors.foreground },
+
+        {CATEGORY_ORDER.map((category) => (
+          <View key={category} style={styles.categoryBlock}>
+            <Text
+              style={[styles.categoryLabel, { color: colors.foreground }]}
+            >
+              {CATEGORY_LABELS[category]}
+            </Text>
+            <View style={styles.providerGrid}>
+              {providersInCategory(category).map((p) => {
+                // Delivery providers always show the real tracking flow (the
+                // ConnectAccountSheet branches on isDelivery), so they should
+                // never show the violet "API setup required" pill on the
+                // tile preview.
+                const implemented =
+                  isProviderImplemented(p) || isDeliveryProvider(p);
+                const connected = accountsByProvider(p).length;
+                return (
+                  <Pressable
+                    key={p}
+                    onPress={() => setSheetProvider(p)}
+                    style={({ pressed }) => [
+                      styles.providerTile,
+                      {
+                        backgroundColor: colors.card,
+                        borderColor: colors.border,
+                        opacity: pressed ? 0.88 : 1,
+                      },
                     ]}
                   >
-                    {PROVIDER_LABELS[p]}
-                  </Text>
-                  {!implemented ? (
-                    <View
-                      style={[
-                        styles.roadmapPill,
-                        {
-                          backgroundColor: "rgba(139, 92, 246, 0.10)",
-                          borderColor: "rgba(139, 92, 246, 0.40)",
-                        },
-                      ]}
-                    >
-                      <Feather name="clock" size={9} color={colors.violetAccent} />
+                    <ProviderIcon provider={p} size={36} />
+                    <View style={styles.providerTileBody}>
                       <Text
                         style={[
-                          styles.roadmapPillText,
-                          { color: colors.violetAccent },
+                          styles.providerTileLabel,
+                          { color: colors.foreground },
                         ]}
                       >
-                        API setup required
+                        {PROVIDER_LABELS[p]}
                       </Text>
+                      {!implemented ? (
+                        <View
+                          style={[
+                            styles.roadmapPill,
+                            {
+                              backgroundColor: "rgba(139, 92, 246, 0.10)",
+                              borderColor: "rgba(139, 92, 246, 0.40)",
+                            },
+                          ]}
+                        >
+                          <Feather name="clock" size={9} color={colors.violetAccent} />
+                          <Text
+                            style={[
+                              styles.roadmapPillText,
+                              { color: colors.violetAccent },
+                            ]}
+                          >
+                            API setup required
+                          </Text>
+                        </View>
+                      ) : (
+                        <Text
+                          style={[
+                            styles.providerTileMeta,
+                            { color: colors.mutedForeground },
+                          ]}
+                        >
+                          {connected > 0
+                            ? `${connected} connected`
+                            : category === "delivery"
+                              ? "Tap to track"
+                              : "Tap to connect"}
+                        </Text>
+                      )}
                     </View>
-                  ) : (
-                    <Text
-                      style={[
-                        styles.providerTileMeta,
-                        { color: colors.mutedForeground },
-                      ]}
-                    >
-                      {accountsByProvider(p).length > 0
-                        ? `${accountsByProvider(p).length} connected`
-                        : "Tap to connect"}
-                    </Text>
-                  )}
-                </View>
-                <Feather name="plus" size={16} color={colors.radarBlue} />
-              </Pressable>
-            );
-          })}
-        </View>
+                    <Feather
+                      name={category === "delivery" ? "package" : "plus"}
+                      size={16}
+                      color={colors.radarBlue}
+                    />
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+        ))}
 
         <View
           style={[
@@ -180,10 +208,11 @@ export default function AccountsScreen() {
             </Text>
           </View>
           <Text style={[styles.privacyBody, { color: colors.mutedForeground }]}>
-            YourRadar never asks for your password. We only connect through official
-            provider APIs and OAuth — Google, Microsoft, Meta, LinkedIn, Telegram
-            Bot API, WhatsApp Business API, and TikTok Developer APIs. Tokens stay
-            on the server, refresh automatically, and never reach this device.
+            My Radar never asks for your password. We only connect through
+            official provider APIs and OAuth — Google, Microsoft, Yahoo, Meta,
+            LinkedIn, X, Telegram Bot API, WhatsApp Business API, and TikTok
+            Developer APIs. Tokens stay on the server, refresh automatically,
+            and never reach this device.
           </Text>
           <Text
             style={[
@@ -191,9 +220,19 @@ export default function AccountsScreen() {
               { color: colors.mutedForeground, marginTop: 6 },
             ]}
           >
-            Personal app notifications that are not exposed by official APIs (for
-            example consumer Facebook or personal WhatsApp messages) cannot be
-            mirrored — by design.
+            Delivery tracking uses official courier APIs and webhooks where
+            available — Evri, DPD, Royal Mail, and Amazon. We never scrape
+            courier accounts or ask for courier passwords.
+          </Text>
+          <Text
+            style={[
+              styles.privacyBody,
+              { color: colors.mutedForeground, marginTop: 6 },
+            ]}
+          >
+            Personal app notifications that are not exposed by official APIs
+            (for example consumer Facebook or personal WhatsApp messages)
+            cannot be mirrored — by design.
           </Text>
         </View>
 
@@ -303,6 +342,7 @@ export default function AccountsScreen() {
         provider={sheetProvider}
         onClose={() => setSheetProvider(null)}
         onConnect={(p, value, extras) => connectAccount(p, value, extras)}
+        onAddDelivery={(p, details) => addDelivery(p, details)}
       />
     </View>
   );
@@ -318,9 +358,17 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     paddingHorizontal: 4,
   },
+  categoryBlock: {
+    marginBottom: 14,
+  },
+  categoryLabel: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 14,
+    marginBottom: 8,
+    paddingHorizontal: 4,
+  },
   providerGrid: {
     gap: 8,
-    marginBottom: 16,
   },
   providerTile: {
     flexDirection: "row",

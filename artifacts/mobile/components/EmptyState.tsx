@@ -38,7 +38,7 @@ export function EmptyState({
             ]}
             pointerEvents="none"
           >
-            <BrandLogo height={14} tintColor={colors.brandNavy} />
+            <BrandLogo height={22} tintColor={colors.brandNavy} />
           </View>
         </View>
       ) : (
@@ -78,9 +78,9 @@ const styles = StyleSheet.create({
   },
   logoBadge: {
     position: "absolute",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 12,
     borderWidth: 1,
   },
   iconWrap: {
