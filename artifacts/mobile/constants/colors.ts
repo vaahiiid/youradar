@@ -27,14 +27,23 @@ const lightPalette = {
   border: "#E5E7EB",
   input: "#E5E7EB",
 
+  // Brand colors per provider
   gmail: "#EA4335",
   outlook: "#0078D4",
+  yahoo: "#6001D2",
+  aol: "#FF0B00",
+  hotmail: "#0072C6",
   instagram: "#E1306C",
   linkedin: "#0A66C2",
   facebook: "#1877F2",
   telegram: "#229ED9",
   whatsapp: "#25D366",
   tiktok: "#010101",
+  x: "#0F1419",
+  evri: "#2E2872",
+  dpd: "#DC0032",
+  royalmail: "#ED1C24",
+  amazon: "#FF9900",
 
   success: "#2F80ED",
   warning: "#F5A524",

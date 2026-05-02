@@ -10,7 +10,10 @@ import React, {
 
 import {
   PROVIDER_ORDER,
+  isDeliveryProvider,
   type ConnectedAccount,
+  type DeliveryDetails,
+  type DeliveryStatus,
   type EmailNotification,
   type InstagramEventKind,
   type Provider,
@@ -18,12 +21,21 @@ import {
 } from "@/types";
 import { uid } from "@/utils/format";
 
-const STORAGE_KEY = "yourradar_state_v3";
+const STORAGE_KEY = "yourradar_state_v4";
+const LEGACY_STORAGE_KEYS = ["yourradar_state_v3"];
 
 interface PersistedState {
   accounts: ConnectedAccount[];
   notifications: EmailNotification[];
   settings: SettingsState;
+}
+
+interface DeliveryInput {
+  trackingNumber: string;
+  label: string;
+  merchant?: string;
+  expectedAt?: number;
+  notificationsEnabled?: boolean;
 }
 
 interface InboxContextValue {
@@ -34,13 +46,16 @@ interface InboxContextValue {
   unseenTotal: number;
   unseenByAccount: Record<string, number>;
   unseenByProvider: Record<Provider, number>;
-  /** Providers we have full mock OAuth + sample data for (Gmail/Outlook/Instagram). */
+  /** Providers that have at least one connected account on this device. */
+  connectedProviders: Provider[];
+  /** Providers we have full mock OAuth + sample data for in the MVP. */
   fullyConfiguredProviders: Provider[];
   connectAccount: (
     provider: Provider,
     handleOrEmail: string,
     extras?: { instagramKind?: ConnectedAccount["instagramKind"] },
   ) => void;
+  addDelivery: (provider: Provider, details: DeliveryInput) => ConnectedAccount;
   disconnectAccount: (accountId: string) => void;
   reconnectAccount: (accountId: string) => void;
   toggleAccountNotifications: (accountId: string) => void;
@@ -214,7 +229,7 @@ interface SocialSample {
 }
 
 const SOCIAL_SAMPLES: Record<
-  "linkedin" | "facebook" | "telegram" | "whatsapp" | "tiktok",
+  "linkedin" | "facebook" | "telegram" | "whatsapp" | "tiktok" | "x",
   SocialSample[]
 > = {
   linkedin: [
@@ -307,6 +322,163 @@ const SOCIAL_SAMPLES: Record<
       link: () => "https://www.tiktok.com/",
     },
   ],
+  x: [
+    {
+      senderName: "Alex Rivera",
+      senderHandle: "@alexrivera",
+      subject: "New mention on X",
+      snippet: "@alexrivera: thanks @you — this saved my whole launch week 🙏",
+      body: "@alexrivera mentioned you: thanks @you — this saved my whole launch week 🙏 anyone else here using YourRadar yet?",
+      link: () => "https://x.com/notifications/mentions",
+    },
+    {
+      senderName: "X",
+      senderHandle: "Engagement",
+      subject: "Your post is taking off",
+      snippet: "1,820 impressions and 64 reposts in the first hour.",
+      body: "Your post about notification UX has 1,820 impressions and 64 reposts in the first hour — well above your account average.",
+      link: () => "https://x.com/home",
+    },
+  ],
+};
+
+interface EmailProviderSample extends SocialSample {}
+
+const EMAIL_PROVIDER_SAMPLES: Record<
+  "yahoo" | "aol" | "hotmail",
+  EmailProviderSample[]
+> = {
+  yahoo: [
+    {
+      senderName: "Yahoo Finance",
+      senderHandle: "alerts@yahoofinance.com",
+      subject: "Daily market wrap · S&P closed up 0.6%",
+      snippet: "Markets closed broadly higher today on better-than-expected jobs data.",
+      body: "Markets closed broadly higher today on better-than-expected jobs data. Tech and consumer discretionary led the rally; energy lagged.",
+      link: () => "https://mail.yahoo.com/",
+    },
+    {
+      senderName: "Eventbrite",
+      senderHandle: "noreply@eventbrite.com",
+      subject: "Your ticket for Notification UX Meetup",
+      snippet: "You're confirmed for Notification UX Meetup on Thursday 7 PM.",
+      body: "You're confirmed for Notification UX Meetup on Thursday 7 PM at the Mission Studios space. Show this email at the door.",
+      link: () => "https://mail.yahoo.com/",
+    },
+  ],
+  aol: [
+    {
+      senderName: "AOL News",
+      senderHandle: "newsletter@aol.com",
+      subject: "Your morning briefing",
+      snippet: "Top stories: market open, weather, and one good thing.",
+      body: "Top stories from this morning: markets open mixed, sunny weekend ahead in your area, and one community story to start the day on a high note.",
+      link: () => "https://mail.aol.com/",
+    },
+  ],
+  hotmail: [
+    {
+      senderName: "Microsoft Family",
+      senderHandle: "no-reply@microsoft.com",
+      subject: "Weekly activity report",
+      snippet: "Here's a summary of your family's screen time and app activity.",
+      body: "Here's a summary of your family's screen time, app activity, and recent purchases for the past week.",
+      link: () => "https://outlook.live.com/",
+    },
+    {
+      senderName: "OneDrive",
+      senderHandle: "noreply@onedrive.com",
+      subject: "Files shared with you",
+      snippet: "Maya shared 'Q4 strategy.docx' with you.",
+      body: "Maya shared 'Q4 strategy.docx' with you. Open in OneDrive to review and add comments.",
+      link: () => "https://outlook.live.com/",
+    },
+  ],
+};
+
+interface DeliverySample {
+  status: DeliveryStatus;
+  sender: string;
+  subject: string;
+  snippet: string;
+  body: string;
+}
+
+const DELIVERY_STATUS_FLOW: DeliveryStatus[] = [
+  "in_transit",
+  "out_for_delivery",
+  "delivered",
+  "delayed",
+];
+
+const DELIVERY_SAMPLES: Record<
+  "evri" | "dpd" | "royalmail" | "amazon",
+  DeliverySample[]
+> = {
+  evri: [
+    {
+      status: "in_transit",
+      sender: "Evri",
+      subject: "Your parcel is on its way",
+      snippet: "Your parcel has left our hub and is heading to your local depot.",
+      body: "Your parcel has left our sorting hub and is heading to your local depot. We'll text you a 1-hour delivery window once it's out for delivery.",
+    },
+    {
+      status: "out_for_delivery",
+      sender: "Evri",
+      subject: "Out for delivery today",
+      snippet: "Your parcel is on the van and will arrive between 2 PM and 4 PM.",
+      body: "Your parcel is on the van today. Estimated delivery window: 2 PM – 4 PM. You can update delivery preferences in the Evri app.",
+    },
+  ],
+  dpd: [
+    {
+      status: "out_for_delivery",
+      sender: "DPD",
+      subject: "Your 1-hour window is 11:20–12:20",
+      snippet: "Your driver Marek will deliver your parcel between 11:20 and 12:20.",
+      body: "Your driver Marek will deliver your parcel between 11:20 and 12:20. Track live on the DPD app for the most accurate ETA.",
+    },
+    {
+      status: "delivered",
+      sender: "DPD",
+      subject: "Delivered · signed for by you",
+      snippet: "Your parcel was delivered at 11:42 and signed for at the front door.",
+      body: "Your parcel was delivered at 11:42 and signed for at the front door. View the delivery photo in the DPD tracking page.",
+    },
+  ],
+  royalmail: [
+    {
+      status: "in_transit",
+      sender: "Royal Mail",
+      subject: "Item received at sorting centre",
+      snippet: "Your tracked item has been received at the Birmingham Mail Centre.",
+      body: "Your tracked item has been received at the Birmingham Mail Centre and will be sent to your local delivery office overnight.",
+    },
+    {
+      status: "delayed",
+      sender: "Royal Mail",
+      subject: "Slight delay on your delivery",
+      snippet: "We're seeing slight delays in your area. Updated ETA: tomorrow.",
+      body: "We're seeing slight delays in your area due to network volume. Your parcel's updated estimated delivery date is tomorrow.",
+    },
+  ],
+  amazon: [
+    {
+      status: "out_for_delivery",
+      sender: "Amazon",
+      subject: "Arriving today",
+      snippet: "Your order with 2 items is arriving today between 5 PM and 9 PM.",
+      body: "Your order with 2 items is arriving today between 5 PM and 9 PM. Track your delivery driver on the Amazon app for live updates.",
+    },
+    {
+      status: "delivered",
+      sender: "Amazon",
+      subject: "Delivered · left in safe place",
+      snippet: "Your package was left in the safe place you selected.",
+      body: "Your package was left in the safe place you selected (porch). View the delivery photo in Your Orders.",
+    },
+  ],
 };
 
 const DEFAULT_SETTINGS: SettingsState = {
@@ -325,16 +497,34 @@ function pickInstagramSample(kind: InstagramEventKind): InstagramSample {
 }
 
 function buildEmailNotification(account: ConnectedAccount): EmailNotification {
-  const sample = pickFrom(EMAIL_SAMPLES);
+  const provider = account.provider;
   const id = uid();
+  if (provider === "yahoo" || provider === "aol" || provider === "hotmail") {
+    const sample = pickFrom(EMAIL_PROVIDER_SAMPLES[provider]);
+    return {
+      id,
+      accountId: account.id,
+      provider,
+      emailAddress: account.emailAddress,
+      senderName: sample.senderName,
+      senderEmail: sample.senderHandle,
+      subject: sample.subject,
+      snippet: sample.snippet,
+      bodyPreview: sample.body,
+      receivedAt: Date.now(),
+      providerWebLink: sample.link(account.emailAddress),
+      isSeen: false,
+    };
+  }
+  const sample = pickFrom(EMAIL_SAMPLES);
   const baseLink =
-    account.provider === "gmail"
+    provider === "gmail"
       ? `https://mail.google.com/mail/u/0/#inbox/${id}`
       : `https://outlook.office.com/mail/inbox/id/${id}`;
   return {
     id,
     accountId: account.id,
-    provider: account.provider,
+    provider,
     emailAddress: account.emailAddress,
     senderName: sample.name,
     senderEmail: sample.email,
@@ -385,7 +575,8 @@ function buildSocialNotification(account: ConnectedAccount): EmailNotification {
     | "facebook"
     | "telegram"
     | "whatsapp"
-    | "tiktok";
+    | "tiktok"
+    | "x";
   const sample = pickFrom(SOCIAL_SAMPLES[provider]);
   return {
     id: uid(),
@@ -403,17 +594,36 @@ function buildSocialNotification(account: ConnectedAccount): EmailNotification {
   };
 }
 
-function defaultEmptyByProvider(): Record<Provider, number> {
+function buildDeliveryNotification(account: ConnectedAccount): EmailNotification {
+  const provider = account.provider as "evri" | "dpd" | "royalmail" | "amazon";
+  const samples = DELIVERY_SAMPLES[provider];
+  const current = account.deliveryDetails?.status;
+  // Pick a sample whose status is the next logical step from the current
+  // status so the simulated alerts feel like a real status change.
+  const candidates = samples.filter((s) => s.status !== current);
+  const sample = pickFrom(candidates.length > 0 ? candidates : samples);
+  const trackingNumber = account.deliveryDetails?.trackingNumber ?? account.emailAddress;
   return {
-    gmail: 0,
-    outlook: 0,
-    instagram: 0,
-    linkedin: 0,
-    facebook: 0,
-    telegram: 0,
-    whatsapp: 0,
-    tiktok: 0,
+    id: uid(),
+    accountId: account.id,
+    provider: account.provider,
+    emailAddress: account.emailAddress,
+    senderName: sample.sender,
+    senderEmail: `tracking · ${trackingNumber}`,
+    subject: sample.subject,
+    snippet: sample.snippet,
+    bodyPreview: sample.body,
+    receivedAt: Date.now(),
+    providerWebLink: account.deliveryDetails?.publicTrackingUrl,
+    isSeen: false,
+    deliveryStatus: sample.status,
   };
+}
+
+function defaultEmptyByProvider(): Record<Provider, number> {
+  const out = {} as Record<Provider, number>;
+  for (const p of PROVIDER_ORDER) out[p] = 0;
+  return out;
 }
 
 function makeSeed(): PersistedState {
@@ -507,73 +717,6 @@ function makeSeed(): PersistedState {
     isSeen: false,
   });
 
-  const igComment = INSTAGRAM_SAMPLES.comment[0]!;
-  notifications.push({
-    id: uid(),
-    accountId: insta.id,
-    provider: "instagram",
-    emailAddress: insta.emailAddress,
-    senderName: igComment.senderName,
-    senderEmail: igComment.senderHandle,
-    subject: igComment.subject,
-    snippet: igComment.snippet,
-    bodyPreview: igComment.body,
-    receivedAt: now - 48 * 60 * 1000,
-    providerWebLink: "https://www.instagram.com/p/seed4/",
-    isSeen: true,
-    instagramEventKind: "comment",
-    mediaCaption: igComment.caption,
-  });
-
-  const sample2 = EMAIL_SAMPLES[3]!;
-  notifications.push({
-    id: uid(),
-    accountId: gmail.id,
-    provider: "gmail",
-    emailAddress: gmail.emailAddress,
-    senderName: sample2.name,
-    senderEmail: sample2.email,
-    subject: sample2.subject,
-    snippet: sample2.snippet,
-    bodyPreview: sample2.body,
-    receivedAt: now - 95 * 60 * 1000,
-    providerWebLink: "https://mail.google.com/mail/u/0/#inbox/seed5",
-    isSeen: true,
-  });
-
-  const igInsight = INSTAGRAM_SAMPLES.insight[0]!;
-  notifications.push({
-    id: uid(),
-    accountId: insta.id,
-    provider: "instagram",
-    emailAddress: insta.emailAddress,
-    senderName: igInsight.senderName,
-    senderEmail: igInsight.senderHandle,
-    subject: igInsight.subject,
-    snippet: igInsight.snippet,
-    bodyPreview: igInsight.body,
-    receivedAt: now - 4 * 60 * 60 * 1000,
-    providerWebLink: "https://www.instagram.com/yourhandle/",
-    isSeen: true,
-    instagramEventKind: "insight",
-  });
-
-  const sample3 = EMAIL_SAMPLES[5]!;
-  notifications.push({
-    id: uid(),
-    accountId: outlook.id,
-    provider: "outlook",
-    emailAddress: outlook.emailAddress,
-    senderName: sample3.name,
-    senderEmail: sample3.email,
-    subject: sample3.subject,
-    snippet: sample3.snippet,
-    bodyPreview: sample3.body,
-    receivedAt: now - 6 * 60 * 60 * 1000,
-    providerWebLink: "https://outlook.office.com/mail/inbox/id/seed7",
-    isSeen: true,
-  });
-
   return { accounts, notifications, settings: DEFAULT_SETTINGS };
 }
 
@@ -581,16 +724,24 @@ function buildDemoAccount(provider: Provider): ConnectedAccount {
   const handles: Record<Provider, { addr: string; display: string }> = {
     gmail: { addr: "demo@gmail.com", display: "Demo" },
     outlook: { addr: "demo@outlook.com", display: "Demo" },
+    yahoo: { addr: "demo@yahoo.com", display: "Demo" },
+    aol: { addr: "demo@aol.com", display: "Demo" },
+    hotmail: { addr: "demo@hotmail.com", display: "Demo" },
     instagram: { addr: "@demo.creator", display: "Demo" },
     linkedin: { addr: "linkedin.com/in/demo", display: "Demo" },
-    facebook: { addr: "Demo Page", display: "Demo" },
+    facebook: { addr: "Demo Page", display: "Demo Page" },
     telegram: { addr: "@demo_channel", display: "Demo" },
-    whatsapp: { addr: "+1 555 010 0000", display: "Demo" },
+    whatsapp: { addr: "+1 555 010 0000", display: "Demo Business" },
     tiktok: { addr: "@demo.creator", display: "Demo" },
+    x: { addr: "@demo", display: "Demo" },
+    evri: { addr: "EVR123456789", display: "Demo parcel" },
+    dpd: { addr: "DPD987654321", display: "Demo parcel" },
+    royalmail: { addr: "RM1234567GB", display: "Demo parcel" },
+    amazon: { addr: "TBA123456789", display: "Demo order" },
   };
   const h = handles[provider];
-  return {
-    id: `demo-${provider}`,
+  const base: ConnectedAccount = {
+    id: `demo-${provider}-${uid()}`,
     provider,
     emailAddress: h.addr,
     displayName: h.display,
@@ -599,11 +750,38 @@ function buildDemoAccount(provider: Provider): ConnectedAccount {
     createdAt: Date.now(),
     notificationsEnabled: true,
   };
+  if (isDeliveryProvider(provider)) {
+    base.deliveryDetails = {
+      trackingNumber: h.addr,
+      label: h.display,
+      merchant: provider === "amazon" ? "Amazon" : undefined,
+      status: "in_transit",
+      lastCheckedAt: Date.now(),
+      publicTrackingUrl: trackingUrlFor(provider, h.addr),
+    };
+  }
+  return base;
+}
+
+function trackingUrlFor(provider: Provider, trackingNumber: string): string | undefined {
+  const t = encodeURIComponent(trackingNumber.trim());
+  switch (provider) {
+    case "evri":
+      return `https://www.evri.com/track/parcel/${t}`;
+    case "dpd":
+      return `https://track.dpd.co.uk/search?reference=${t}`;
+    case "royalmail":
+      return `https://www.royalmail.com/track-your-item#/tracking-results/${t}`;
+    case "amazon":
+      return `https://www.amazon.co.uk/gp/your-account/order-details?orderID=${t}`;
+    default:
+      return undefined;
+  }
 }
 
 function normalizeIdentifier(provider: Provider, raw: string): string {
   const trimmed = raw.trim();
-  if (provider === "instagram" || provider === "tiktok") {
+  if (provider === "instagram" || provider === "tiktok" || provider === "x") {
     return trimmed.startsWith("@") ? trimmed.toLowerCase() : `@${trimmed.toLowerCase()}`;
   }
   if (provider === "telegram") {
@@ -611,17 +789,34 @@ function normalizeIdentifier(provider: Provider, raw: string): string {
       ? trimmed
       : `@${trimmed}`;
   }
-  if (provider === "gmail" || provider === "outlook") {
+  if (
+    provider === "gmail" ||
+    provider === "outlook" ||
+    provider === "yahoo" ||
+    provider === "aol" ||
+    provider === "hotmail"
+  ) {
     return trimmed.toLowerCase();
   }
   return trimmed;
 }
 
 function deriveDisplayName(provider: Provider, normalized: string): string {
-  if (provider === "instagram" || provider === "tiktok" || provider === "telegram") {
+  if (
+    provider === "instagram" ||
+    provider === "tiktok" ||
+    provider === "telegram" ||
+    provider === "x"
+  ) {
     return normalized.replace(/^@/, "");
   }
-  if (provider === "gmail" || provider === "outlook") {
+  if (
+    provider === "gmail" ||
+    provider === "outlook" ||
+    provider === "yahoo" ||
+    provider === "aol" ||
+    provider === "hotmail"
+  ) {
     return normalized.split("@")[0]!;
   }
   if (provider === "linkedin") {
@@ -641,11 +836,20 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
     let cancelled = false;
     (async () => {
       try {
-        const raw = await AsyncStorage.getItem(STORAGE_KEY);
+        let raw = await AsyncStorage.getItem(STORAGE_KEY);
+        if (!raw) {
+          // One-time migration from older storage versions.
+          for (const legacy of LEGACY_STORAGE_KEYS) {
+            const legacyRaw = await AsyncStorage.getItem(legacy);
+            if (legacyRaw) {
+              raw = legacyRaw;
+              break;
+            }
+          }
+        }
         if (cancelled) return;
         if (raw) {
           const parsed = JSON.parse(raw) as PersistedState;
-          // Backfill notificationsEnabled on accounts persisted with the older schema.
           const migratedAccounts = (parsed.accounts ?? []).map((a) => ({
             ...a,
             notificationsEnabled: a.notificationsEnabled ?? true,
@@ -687,7 +891,13 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
       const trimmed = handleOrEmail.trim();
       if (!trimmed) return;
 
-      if ((provider === "gmail" || provider === "outlook") && !trimmed.includes("@")) {
+      const isEmail =
+        provider === "gmail" ||
+        provider === "outlook" ||
+        provider === "yahoo" ||
+        provider === "aol" ||
+        provider === "hotmail";
+      if (isEmail && !trimmed.includes("@")) {
         return;
       }
 
@@ -713,6 +923,35 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
         };
         return [...prev, account];
       });
+    },
+    [],
+  );
+
+  const addDelivery = useCallback<InboxContextValue["addDelivery"]>(
+    (provider, details) => {
+      const trackingNumber = details.trackingNumber.trim();
+      const label = details.label.trim() || "Tracked parcel";
+      const account: ConnectedAccount = {
+        id: uid(),
+        provider,
+        emailAddress: trackingNumber,
+        displayName: label,
+        status: "connected",
+        lastSyncAt: Date.now(),
+        createdAt: Date.now(),
+        notificationsEnabled: details.notificationsEnabled ?? true,
+        deliveryDetails: {
+          trackingNumber,
+          label,
+          merchant: details.merchant?.trim() || undefined,
+          expectedAt: details.expectedAt,
+          status: "added",
+          lastCheckedAt: Date.now(),
+          publicTrackingUrl: trackingUrlFor(provider, trackingNumber),
+        },
+      };
+      setAccounts((prev) => [...prev, account]);
+      return account;
     },
     [],
   );
@@ -749,14 +988,21 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
       const candidates = accounts.filter(
         (a) => a.provider === provider && a.status === "connected",
       );
-      // If no real account exists for this provider, mint a synthetic demo
-      // account so the simulate buttons still work for every provider.
-      const account: ConnectedAccount =
-        candidates.length === 0
-          ? buildDemoAccount(provider)
-          : accountId
-            ? candidates.find((a) => a.id === accountId) ?? candidates[0]!
-            : candidates[Math.floor(Math.random() * candidates.length)]!;
+
+      // Per the visibility rule: if no real account exists for this provider,
+      // mint a demo account, persist it, and then create the notification
+      // under it. That way the dashboard, filters, and accounts page will
+      // immediately reflect the newly-connected source.
+      let account: ConnectedAccount;
+      let mintedAccount: ConnectedAccount | null = null;
+      if (candidates.length === 0) {
+        account = buildDemoAccount(provider);
+        mintedAccount = account;
+      } else if (accountId) {
+        account = candidates.find((a) => a.id === accountId) ?? candidates[0]!;
+      } else {
+        account = candidates[Math.floor(Math.random() * candidates.length)]!;
+      }
 
       let notif: EmailNotification;
       if (provider === "instagram") {
@@ -766,19 +1012,38 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
         provider === "facebook" ||
         provider === "telegram" ||
         provider === "whatsapp" ||
-        provider === "tiktok"
+        provider === "tiktok" ||
+        provider === "x"
       ) {
         notif = buildSocialNotification(account);
+      } else if (isDeliveryProvider(provider)) {
+        notif = buildDeliveryNotification(account);
       } else {
         notif = buildEmailNotification(account);
       }
 
       setNotifications((prev) => [notif, ...prev]);
-      if (candidates.length > 0) {
-        setAccounts((prev) =>
-          prev.map((a) => (a.id === account.id ? { ...a, lastSyncAt: Date.now() } : a)),
-        );
-      }
+      setAccounts((prev) => {
+        let next = prev;
+        if (mintedAccount) {
+          next = [...prev, mintedAccount];
+        }
+        return next.map((a) => {
+          if (a.id !== account.id) return a;
+          if (notif.deliveryStatus && a.deliveryDetails) {
+            return {
+              ...a,
+              lastSyncAt: Date.now(),
+              deliveryDetails: {
+                ...a.deliveryDetails,
+                status: notif.deliveryStatus,
+                lastCheckedAt: Date.now(),
+              },
+            };
+          }
+          return { ...a, lastSyncAt: Date.now() };
+        });
+      });
       return notif;
     },
     [accounts],
@@ -833,10 +1098,14 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
     [notifications],
   );
 
+  const connectedProviders = useMemo<Provider[]>(() => {
+    const seen = new Set<Provider>();
+    for (const a of accounts) seen.add(a.provider);
+    return PROVIDER_ORDER.filter((p) => seen.has(p));
+  }, [accounts]);
+
   const fullyConfiguredProviders: Provider[] = ["gmail", "outlook"];
-  // Reference PROVIDER_ORDER so it is treated as used in environments that
-  // tree-shake unused exports.
-  void PROVIDER_ORDER;
+  void DELIVERY_STATUS_FLOW;
 
   const value: InboxContextValue = {
     ready,
@@ -846,8 +1115,10 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
     unseenTotal,
     unseenByAccount,
     unseenByProvider,
+    connectedProviders,
     fullyConfiguredProviders,
     connectAccount,
+    addDelivery,
     disconnectAccount,
     reconnectAccount,
     toggleAccountNotifications,

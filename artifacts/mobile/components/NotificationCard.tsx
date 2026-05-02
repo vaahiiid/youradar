@@ -36,6 +36,12 @@ function getProviderTagColor(
       return colors.gmail;
     case "outlook":
       return colors.outlook;
+    case "yahoo":
+      return colors.yahoo;
+    case "aol":
+      return colors.aol;
+    case "hotmail":
+      return colors.hotmail;
     case "instagram":
       return colors.instagram;
     case "linkedin":
@@ -48,8 +54,28 @@ function getProviderTagColor(
       return colors.whatsapp;
     case "tiktok":
       return colors.tiktok;
+    case "x":
+      return colors.x;
+    case "evri":
+      return colors.evri;
+    case "dpd":
+      return colors.dpd;
+    case "royalmail":
+      return colors.royalmail;
+    case "amazon":
+      return colors.amazon;
   }
 }
+
+const DELIVERY_STATUS_LABEL: Record<string, string> = {
+  added: "Added",
+  in_transit: "In transit",
+  out_for_delivery: "Out for delivery",
+  delivered: "Delivered",
+  delayed: "Delayed",
+  exception: "Exception",
+  unknown: "Unknown",
+};
 
 export function NotificationCard({ item, onPress }: NotificationCardProps) {
   const colors = useColors();
@@ -64,6 +90,20 @@ export function NotificationCard({ item, onPress }: NotificationCardProps) {
   const isInstagram = item.provider === "instagram";
   const eventKind = item.instagramEventKind;
   const providerColor = getProviderTagColor(item.provider, colors);
+  const isHandleProvider =
+    isInstagram ||
+    item.provider === "linkedin" ||
+    item.provider === "telegram" ||
+    item.provider === "tiktok" ||
+    item.provider === "x";
+  const isDelivery =
+    item.provider === "evri" ||
+    item.provider === "dpd" ||
+    item.provider === "royalmail" ||
+    item.provider === "amazon";
+  const deliveryStatusLabel = item.deliveryStatus
+    ? DELIVERY_STATUS_LABEL[item.deliveryStatus] ?? item.deliveryStatus
+    : null;
 
   return (
     <Pressable
@@ -144,6 +184,19 @@ export function NotificationCard({ item, onPress }: NotificationCardProps) {
                 </Text>
               </View>
             ) : null}
+            {isDelivery && deliveryStatusLabel ? (
+              <View
+                style={[
+                  styles.tag,
+                  { backgroundColor: providerColor + "1F" },
+                ]}
+              >
+                <Feather name="package" size={10} color={providerColor} />
+                <Text style={[styles.tagText, { color: providerColor }]}>
+                  {deliveryStatusLabel}
+                </Text>
+              </View>
+            ) : null}
           </View>
 
           <Text
@@ -187,9 +240,11 @@ export function NotificationCard({ item, onPress }: NotificationCardProps) {
           ) : null}
 
           <Text style={[styles.account, { color: colors.mutedForeground }]} numberOfLines={1}>
-            {isInstagram || item.provider === "linkedin" || item.provider === "telegram" || item.provider === "tiktok"
-              ? `via ${item.emailAddress}`
-              : item.emailAddress}
+            {isDelivery
+              ? `tracking ${item.emailAddress}`
+              : isHandleProvider
+                ? `via ${item.emailAddress}`
+                : item.emailAddress}
           </Text>
         </View>
       </View>

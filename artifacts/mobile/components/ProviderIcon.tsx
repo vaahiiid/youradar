@@ -11,11 +11,14 @@ interface ProviderIconProps {
   size?: number;
 }
 
+type MciName = React.ComponentProps<typeof MaterialCommunityIcons>["name"];
+
 export function ProviderIcon({ provider, size = 36 }: ProviderIconProps) {
   const colors = useColors();
   const radius = size / 2;
   const iconSize = size * 0.55;
 
+  // Instagram uses the multi-stop brand gradient.
   if (provider === "instagram") {
     return (
       <LinearGradient
@@ -45,8 +48,34 @@ export function ProviderIcon({ provider, size = 36 }: ProviderIconProps) {
     );
   }
 
-  let bg = colors.gmail;
-  let iconName: React.ComponentProps<typeof MaterialCommunityIcons>["name"] = "gmail";
+  if (provider === "x") {
+    return (
+      <View
+        style={[
+          styles.wrap,
+          { width: size, height: size, borderRadius: radius, backgroundColor: colors.x },
+        ]}
+      >
+        <Text style={[styles.xGlyph, { fontSize: iconSize * 1.05 }]}>𝕏</Text>
+      </View>
+    );
+  }
+
+  if (provider === "aol") {
+    return (
+      <View
+        style={[
+          styles.wrap,
+          { width: size, height: size, borderRadius: radius, backgroundColor: colors.aol },
+        ]}
+      >
+        <Text style={[styles.textGlyph, { fontSize: iconSize * 0.7 }]}>AOL</Text>
+      </View>
+    );
+  }
+
+  let bg: string = colors.gmail;
+  let iconName: MciName = "gmail";
   let useFontAwesome = false;
   let faName: React.ComponentProps<typeof FontAwesome5>["name"] = "envelope";
 
@@ -58,6 +87,14 @@ export function ProviderIcon({ provider, size = 36 }: ProviderIconProps) {
     case "outlook":
       bg = colors.outlook;
       iconName = "microsoft-outlook";
+      break;
+    case "yahoo":
+      bg = colors.yahoo;
+      iconName = "yahoo";
+      break;
+    case "hotmail":
+      bg = colors.hotmail;
+      iconName = "email";
       break;
     case "linkedin":
       bg = colors.linkedin;
@@ -74,6 +111,23 @@ export function ProviderIcon({ provider, size = 36 }: ProviderIconProps) {
     case "whatsapp":
       bg = colors.whatsapp;
       iconName = "whatsapp";
+      break;
+    case "evri":
+      bg = colors.evri;
+      iconName = "package-variant";
+      break;
+    case "dpd":
+      bg = colors.dpd;
+      iconName = "truck-fast";
+      break;
+    case "royalmail":
+      bg = colors.royalmail;
+      iconName = "email-fast";
+      break;
+    case "amazon":
+      bg = colors.amazon;
+      useFontAwesome = true;
+      faName = "amazon";
       break;
   }
 
@@ -103,5 +157,17 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_700Bold",
     lineHeight: undefined,
     fontWeight: "900",
+  },
+  xGlyph: {
+    color: "#FFFFFF",
+    fontFamily: "Inter_700Bold",
+    fontWeight: "900",
+    lineHeight: undefined,
+  },
+  textGlyph: {
+    color: "#FFFFFF",
+    fontFamily: "Inter_700Bold",
+    fontWeight: "900",
+    letterSpacing: 0.5,
   },
 });

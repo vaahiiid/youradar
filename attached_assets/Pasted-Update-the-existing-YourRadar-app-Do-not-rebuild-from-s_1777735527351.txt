@@ -1,0 +1,262 @@
+Update the existing YourRadar app. Do not rebuild from scratch.
+
+1. Logo and header branding
+
+The colour palette is now good. Keep the current colours.
+
+Make the logo larger and more visible across the app:
+- Startup loading screen
+- Login/signup pages
+- Header/sidebar
+- Mobile header
+- Empty states
+
+The “Radar” text currently appears at the top and is too prominent/wrong. Make it smaller and change the visible product label to:
+
+My Radar
+
+Use “My Radar” in the top branding/header instead of “Radar”.
+
+2. Add X / Twitter
+
+Add X as another monitored provider.
+
+Provider list should now include:
+- Gmail
+- Outlook
+- Yahoo Mail
+- AOL Mail
+- Hotmail
+- Instagram
+- LinkedIn
+- Facebook
+- Telegram
+- WhatsApp
+- TikTok
+- X
+- Evri
+- DPD
+- Royal Mail
+- Amazon
+
+Use “X” as the provider name, not Twitter.
+
+Add X to:
+- Connected accounts
+- Notification filters
+- Mock notifications
+- Provider settings
+- Notification detail pages
+
+Use official X API only. Do not scrape X or ask for passwords.
+
+3. Add Google Analytics
+
+Add Google Analytics support.
+
+Requirements:
+- Add environment variable: VITE_GA_MEASUREMENT_ID
+- Load Google Analytics only if this variable exists.
+- Track basic events:
+  - page_view
+  - sign_up_started
+  - sign_up_completed
+  - login_completed
+  - provider_connect_started
+  - provider_connect_completed
+  - provider_disconnect
+  - push_permission_requested
+  - push_permission_granted
+  - notification_opened
+- Do not track private notification content.
+- Do not send email subjects, message previews, sender names, sender emails, or personal provider data to Google Analytics.
+- Add a privacy-safe analytics helper in the frontend.
+- Add documentation in README.
+
+4. Delivery tracking providers
+
+Add delivery tracking providers where technically possible:
+
+- Evri
+- DPD
+- Royal Mail
+- Amazon
+
+Important:
+Use official APIs only where available. Do not scrape user accounts or ask for courier account passwords unless the official provider flow supports it.
+
+Because delivery providers may not all provide easy personal-account APIs, implement this in two layers:
+
+A. Manual tracking MVP:
+Users can manually add a tracking number.
+Fields:
+- Courier/provider: Evri, DPD, Royal Mail, Amazon, Other
+- Tracking number
+- Order name / label
+- Optional merchant
+- Optional expected delivery date
+- Notification enabled on/off
+
+B. Provider/API-ready architecture:
+Create provider modules for future official API or webhook support:
+- /server/integrations/delivery/evri
+- /server/integrations/delivery/dpd
+- /server/integrations/delivery/royalmail
+- /server/integrations/delivery/amazon
+
+Tracking UI:
+- Add “Deliveries” section.
+- Add “Add delivery tracking” button.
+- Show active deliveries.
+- Show delivery status:
+  - Added
+  - In transit
+  - Out for delivery
+  - Delivered
+  - Delayed
+  - Exception
+  - Unknown
+- Show last checked time.
+- Show provider logo/name.
+- Show tracking number masked where appropriate.
+- Show “Open tracking page” button if a public tracking URL can be generated.
+
+Notifications:
+- Create delivery notifications when tracking status changes.
+- Delivery notifications should appear in the unified notification feed.
+- Delivery notifications should trigger in-app and push notifications.
+- Add mock delivery notifications for Evri, DPD, Royal Mail, and Amazon.
+
+5. Multiple accounts per provider
+
+The app must support multiple connected accounts per provider.
+
+Users should be able to connect:
+- multiple Gmail accounts
+- multiple Outlook accounts
+- multiple Yahoo Mail accounts
+- multiple AOL Mail accounts
+- multiple Hotmail accounts
+- multiple Instagram accounts
+- multiple Facebook accounts/pages
+- multiple LinkedIn accounts/pages where official API allows
+- multiple Telegram bots/chats where supported
+- multiple WhatsApp Business numbers where supported
+- multiple TikTok accounts where supported
+- multiple X accounts where supported
+- multiple delivery tracking items per courier
+
+Important:
+Do not enforce one account per provider.
+
+Database and UI must support:
+- one user can have many connected accounts
+- each connected account belongs to one provider
+- each provider can have many connected accounts
+- each connected account has its own notification settings
+- each connected account has its own connection status
+- each connected account has its own last sync/webhook time
+- notifications must link to the exact connected account that generated them
+
+6. Email providers
+
+Add Yahoo Mail, AOL Mail, and Hotmail.
+
+Email provider handling:
+- Gmail should use Gmail API.
+- Outlook and Hotmail should use Microsoft Graph where supported.
+- Yahoo Mail and AOL Mail should use secure OAuth/IMAP where available, but only if secure and allowed.
+- Do not ask users for raw email passwords.
+- If IMAP is used, prefer OAuth where supported.
+- If a provider cannot support secure notification webhooks, implement a clearly labelled fallback sync option.
+
+Important:
+The product should explain that real-time notifications depend on provider API support.
+
+Provider cards to add:
+- Yahoo Mail
+- AOL Mail
+- Hotmail
+
+7. Connected provider visibility rule
+
+Do not show all connected account details before users connect them.
+
+UI rule:
+- In the main dashboard, only show providers/accounts that the user has connected.
+- In notification filters, show only connected providers plus “All”.
+- In account badge sections, show only connected accounts.
+- In the Connected Accounts page, it is okay to show available providers as “Connect” options.
+- Once a user connects a provider/account, show it in their dashboard and notification filters.
+- If they disconnect it, hide it from the main dashboard and filters unless there are historical notifications that need a filter.
+
+8. Provider connection UI
+
+Connected Accounts page should have two sections:
+
+A. Connected accounts
+Show only accounts already connected:
+- provider icon
+- account name/email/username
+- provider
+- notification toggle
+- status
+- reconnect
+- disconnect
+
+B. Add new connection
+Show available provider buttons:
+- Connect Gmail
+- Connect Outlook
+- Connect Yahoo Mail
+- Connect AOL Mail
+- Connect Hotmail
+- Connect Instagram
+- Connect LinkedIn
+- Connect Facebook
+- Connect Telegram
+- Connect WhatsApp
+- Connect TikTok
+- Connect X
+- Add delivery tracking
+
+9. Mock mode update
+
+Add mock/test actions for:
+- Gmail
+- Outlook
+- Yahoo Mail
+- AOL Mail
+- Hotmail
+- Instagram
+- LinkedIn
+- Facebook
+- Telegram
+- WhatsApp
+- TikTok
+- X
+- Evri delivery
+- DPD delivery
+- Royal Mail delivery
+- Amazon delivery
+
+Mock notifications must respect the connected provider visibility rule:
+- If a mock connected account does not exist, create a demo connected account first.
+- Then create the notification under that account.
+
+10. Acceptance criteria
+
+This update is complete when:
+- Logo is larger and more visible.
+- Top label says “My Radar” and is smaller.
+- X is added as a provider.
+- Google Analytics is added in a privacy-safe way.
+- Delivery tracking section exists for Evri, DPD, Royal Mail, and Amazon.
+- Users can manually add tracking numbers.
+- Delivery status changes can create notifications.
+- Multiple accounts per provider are supported.
+- Yahoo Mail, AOL Mail, and Hotmail are added as email providers.
+- Dashboard only shows connected accounts/providers.
+- Notification filters only show connected providers.
+- Connected Accounts page still shows available providers to connect.
+- No scraping or password-based access is implemented.
