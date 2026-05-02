@@ -6,13 +6,13 @@
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "yourradar",
-    "userInterfaceStyle": "dark",
+    "userInterfaceStyle": "light",
     "newArchEnabled": true,
-    "backgroundColor": "#0B1020",
+    "backgroundColor": "#FFFFFF",
     "splash": {
       "image": "./assets/images/icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0B1020"
+      "backgroundColor": "#FFFFFF"
     },
     "ios": {
       "supportsTablet": false
@@ -20,8 +20,8 @@
     "android": {},
     "web": {
       "favicon": "./assets/images/icon.png",
-      "themeColor": "#0B1020",
-      "backgroundColor": "#0B1020",
+      "themeColor": "#FFFFFF",
+      "backgroundColor": "#FFFFFF",
       "name": "YourRadar",
       "shortName": "YourRadar",
       "description": "YourRadar — every signal, on your radar.",

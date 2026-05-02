@@ -83,7 +83,7 @@ export function RadarPulse({
         });
         const opacity = anim.interpolate({
           inputRange: [0, 0.15, 1],
-          outputRange: [0, 0.65, 0],
+          outputRange: [0, 0.85, 0],
         });
         return (
           <Animated.View
@@ -93,7 +93,7 @@ export function RadarPulse({
               styles.ring,
               {
                 borderColor: colors.radarBlue,
-                opacity: reducedMotion ? 0.3 : opacity,
+                opacity: reducedMotion ? 0.4 : opacity,
                 transform: [{ scale: reducedMotion ? 0.85 : scale }],
                 borderRadius: size / 2,
               },
@@ -106,7 +106,7 @@ export function RadarPulse({
         style={[
           StyleSheet.absoluteFillObject,
           styles.staticRing,
-          { borderColor: "rgba(86, 204, 242, 0.28)", borderRadius: size / 2 },
+          { borderColor: "rgba(47, 128, 237, 0.55)", borderRadius: size / 2 },
         ]}
       />
       <View
@@ -116,7 +116,7 @@ export function RadarPulse({
             width: size * 0.7,
             height: size * 0.7,
             borderRadius: (size * 0.7) / 2,
-            borderColor: "rgba(86, 204, 242, 0.22)",
+            borderColor: "rgba(47, 128, 237, 0.45)",
             top: size * 0.15,
             left: size * 0.15,
           },
@@ -129,9 +129,33 @@ export function RadarPulse({
             width: size * 0.4,
             height: size * 0.4,
             borderRadius: (size * 0.4) / 2,
-            borderColor: "rgba(47, 128, 237, 0.28)",
+            borderColor: "rgba(86, 204, 242, 0.55)",
             top: size * 0.3,
             left: size * 0.3,
+          },
+        ]}
+      />
+
+      {/* Cross-hair grid */}
+      <View
+        style={[
+          styles.gridLine,
+          {
+            width: size,
+            height: 1,
+            top: size / 2 - 0.5,
+            backgroundColor: "rgba(47, 128, 237, 0.18)",
+          },
+        ]}
+      />
+      <View
+        style={[
+          styles.gridLine,
+          {
+            width: 1,
+            height: size,
+            left: size / 2 - 0.5,
+            backgroundColor: "rgba(47, 128, 237, 0.18)",
           },
         ]}
       />
@@ -151,7 +175,7 @@ export function RadarPulse({
                 height: 2,
                 left: size / 2,
                 top: size / 2 - 1,
-                backgroundColor: colors.softCyan,
+                backgroundColor: colors.radarBlue,
                 shadowColor: colors.softCyan,
               },
             ]}
@@ -165,6 +189,7 @@ export function RadarPulse({
                 left: size / 2,
                 top: size / 2 - size / 2,
                 borderTopRightRadius: size / 2,
+                backgroundColor: "rgba(47, 128, 237, 0.18)",
               },
             ]}
           />
@@ -177,8 +202,8 @@ export function RadarPulse({
           {
             top: size * 0.25,
             left: size * 0.7,
-            backgroundColor: colors.softCyan,
-            shadowColor: colors.softCyan,
+            backgroundColor: colors.radarBlue,
+            shadowColor: colors.radarBlue,
           },
         ]}
       />
@@ -188,9 +213,20 @@ export function RadarPulse({
           {
             top: size * 0.6,
             left: size * 0.18,
-            backgroundColor: colors.radarBlue,
+            backgroundColor: colors.softCyan,
+            shadowColor: colors.softCyan,
+          },
+        ]}
+      />
+      <View
+        style={[
+          styles.signalDot,
+          {
+            top: size * 0.78,
+            left: size * 0.62,
+            backgroundColor: colors.violetAccent,
+            shadowColor: colors.violetAccent,
             opacity: 0.85,
-            shadowColor: colors.radarBlue,
           },
         ]}
       />
@@ -208,11 +244,14 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
   },
   staticRing: {
-    borderWidth: 1,
+    borderWidth: 1.25,
   },
   innerRing: {
     position: "absolute",
-    borderWidth: 1,
+    borderWidth: 1.25,
+  },
+  gridLine: {
+    position: "absolute",
   },
   sweepHalf: {
     position: "absolute",
@@ -222,7 +261,6 @@ const styles = StyleSheet.create({
   },
   sweepWedge: {
     position: "absolute",
-    backgroundColor: "rgba(86, 204, 242, 0.10)",
   },
   signalDot: {
     position: "absolute",

@@ -84,7 +84,7 @@ export default function SettingsScreen() {
               value={settings.pushEnabled}
               onValueChange={(v) => updateSettings({ pushEnabled: v })}
               trackColor={{ true: colors.radarBlue, false: colors.border }}
-              thumbColor={Platform.OS === "android" ? colors.brandNavy : "#FFFFFF"}
+              thumbColor="#FFFFFF"
             />
           </Row>
           <Divider />
@@ -93,7 +93,7 @@ export default function SettingsScreen() {
               value={settings.inAppToastsEnabled}
               onValueChange={(v) => updateSettings({ inAppToastsEnabled: v })}
               trackColor={{ true: colors.radarBlue, false: colors.border }}
-              thumbColor={Platform.OS === "android" ? colors.brandNavy : "#FFFFFF"}
+              thumbColor="#FFFFFF"
             />
           </Row>
           <Divider />
@@ -102,7 +102,7 @@ export default function SettingsScreen() {
               value={settings.soundsEnabled}
               onValueChange={(v) => updateSettings({ soundsEnabled: v })}
               trackColor={{ true: colors.radarBlue, false: colors.border }}
-              thumbColor={Platform.OS === "android" ? colors.brandNavy : "#FFFFFF"}
+              thumbColor="#FFFFFF"
             />
           </Row>
           <Divider />
@@ -111,7 +111,7 @@ export default function SettingsScreen() {
               value={settings.reducedMotion}
               onValueChange={(v) => updateSettings({ reducedMotion: v })}
               trackColor={{ true: colors.radarBlue, false: colors.border }}
-              thumbColor={Platform.OS === "android" ? colors.brandNavy : "#FFFFFF"}
+              thumbColor="#FFFFFF"
             />
           </Row>
         </Group>
@@ -152,7 +152,7 @@ export default function SettingsScreen() {
               reducedMotion={settings.reducedMotion}
             />
           </View>
-          <BrandLogo height={18} tintColor={colors.coolGrey} />
+          <BrandLogo height={18} tintColor={colors.brandNavy} />
           <Text style={[styles.poweredBy, { color: colors.coolGrey }]}>
             powered by you group
           </Text>

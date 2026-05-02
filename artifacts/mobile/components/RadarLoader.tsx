@@ -41,11 +41,14 @@ export function RadarLoader({
           <View
             style={[
               styles.logoBadge,
-              { backgroundColor: "rgba(20, 26, 48, 0.78)", borderColor: "rgba(47, 128, 237, 0.45)" },
+              {
+                backgroundColor: "#FFFFFF",
+                borderColor: "rgba(47, 128, 237, 0.35)",
+              },
             ]}
             pointerEvents="none"
           >
-            <BrandLogo height={dim.logo} tintColor={colors.offWhite} />
+            <BrandLogo height={dim.logo} tintColor={colors.brandNavy} />
           </View>
         ) : null}
       </View>
@@ -71,6 +74,11 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 12,
     borderWidth: 1,
+    shadowColor: "#2F80ED",
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
   message: {
     fontFamily: "Inter_500Medium",

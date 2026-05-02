@@ -12,7 +12,7 @@ interface RadarSpinnerProps {
 
 export function RadarSpinner({
   size = 18,
-  color = colors.dark.softCyan,
+  color = colors.light.radarBlue,
   reducedMotion = false,
   style,
 }: RadarSpinnerProps) {
@@ -45,7 +45,7 @@ export function RadarSpinner({
           width: size,
           height: size,
           borderRadius: size / 2,
-          borderColor: color + "55",
+          borderColor: color + "66",
         },
         style,
       ]}
@@ -57,7 +57,7 @@ export function RadarSpinner({
             width: size * 0.5,
             height: size * 0.5,
             borderRadius: (size * 0.5) / 2,
-            borderColor: color + "33",
+            borderColor: color + "44",
             top: size * 0.25 - 1,
             left: size * 0.25 - 1,
           },

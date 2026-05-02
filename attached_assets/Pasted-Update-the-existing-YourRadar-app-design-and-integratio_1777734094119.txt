@@ -1,0 +1,226 @@
+Update the existing YourRadar app design and integrations.
+
+Do not rebuild the app from scratch. Continue from the current version.
+
+1. Background and colour update
+
+Change the main app background to white / off-white.
+
+The current dark-heavy design should be softened. The app should feel clean, premium, mobile-first, and modern.
+
+Use a colour palette that matches the attached logo.
+
+Requirements:
+- Main background: white or off-white
+- Cards: white with soft shadow
+- Text: dark navy / charcoal
+- Radar elements: bold and clearly visible
+- Accent colours should be taken from or inspired by the attached logo
+- Remove any colours that clash with the logo
+- Keep notification badges red for new/unread alerts
+
+Suggested palette:
+- Background: #FFFFFF
+- Soft background: #F7F9FC
+- Primary text: #0B1020
+- Secondary text: #667085
+- Border: #E5E7EB
+- Notification red: #FF3B30
+- Use the logo colours for primary buttons, highlights, and radar effects
+
+2. Make radar elements stronger
+
+The radar concept should be more visible and more central to the design.
+
+Use bold radar elements across the app:
+- Startup loading screen
+- Dashboard hero area
+- Notification centre
+- Empty states
+- Loading states
+- Account connection cards
+- Provider cards
+- Background decorative patterns
+- Mobile navigation selected state
+
+Radar design should include:
+- bold circular radar rings
+- clear scan lines
+- animated sweep effect
+- signal dots
+- pulsing notification points
+- subtle radar grid patterns
+- radar-style loading indicators
+
+Do not make the radar elements too faint. They should be part of the brand identity.
+
+3. Loading system
+
+All loading states should use radar-themed loaders.
+
+Replace generic spinners with:
+- full-page radar loader with logo in the centre
+- mini radar loader for buttons
+- radar scan skeletons for dashboard cards
+- “Scanning your signals...” loading text where appropriate
+
+4. Logo usage
+
+Use the attached logo properly and visibly:
+- startup loading screen
+- header/sidebar
+- login/signup pages
+- PWA icon if possible
+- empty states
+- dashboard branding area
+
+Make sure the design colours match the logo.
+
+5. Add more social and communication sources
+
+Add the following integrations as monitored sources in the app UI:
+
+- LinkedIn
+- Facebook
+- Telegram
+- WhatsApp
+- TikTok
+
+These should appear alongside:
+- Gmail
+- Outlook
+- Instagram
+
+Total provider list:
+- Gmail
+- Outlook
+- Instagram
+- LinkedIn
+- Facebook
+- Telegram
+- WhatsApp
+- TikTok
+
+6. Important API limitation rules
+
+Do not use unofficial scraping, password login, browser bots, private APIs, or anything that violates platform terms.
+
+Each provider must be designed around official APIs only.
+
+The app should clearly explain that some integrations may have limitations depending on official API access, account type, permissions, and app review approval.
+
+7. Provider UI
+
+Update the Connected Accounts page.
+
+Add provider cards for:
+- LinkedIn
+- Facebook
+- Telegram
+- WhatsApp
+- TikTok
+
+Each provider card should include:
+- provider icon
+- provider name
+- connection status
+- notification enabled toggle
+- connect button
+- reconnect button if needed
+- disconnect button if connected
+- short explanation of what can be monitored
+
+If an integration is not fully implemented yet, show:
+“Coming soon / API setup required”
+
+But still include the provider in the UI as part of the product roadmap.
+
+8. Notification source filters
+
+Update the notification dashboard filters to include:
+- All
+- Gmail
+- Outlook
+- Instagram
+- LinkedIn
+- Facebook
+- Telegram
+- WhatsApp
+- TikTok
+
+Each notification should show:
+- provider icon
+- provider name
+- connected account
+- event type
+- preview/snippet
+- received time
+- unread/new badge
+- open button
+
+9. Mock notifications for development
+
+Add mock notification buttons for development/testing:
+
+- Simulate Gmail notification
+- Simulate Outlook notification
+- Simulate Instagram notification
+- Simulate LinkedIn notification
+- Simulate Facebook notification
+- Simulate Telegram notification
+- Simulate WhatsApp notification
+- Simulate TikTok notification
+
+Each mock notification should:
+- appear in the unified notification feed
+- increase the provider badge count
+- trigger in-app toast
+- trigger push notification if permission is enabled
+- open the correct notification detail page when clicked
+
+10. Provider-specific technical direction
+
+LinkedIn:
+- Design for official LinkedIn APIs only.
+- Do not scrape LinkedIn.
+- Add placeholder architecture for LinkedIn notifications where API permissions are available.
+
+Facebook:
+- Use Meta Graph API and Webhooks where available.
+- Support Facebook Page-related events where permissions allow.
+- Do not scrape personal Facebook notifications.
+
+Telegram:
+- Support Telegram Bot API integration.
+- Allow users to connect a Telegram bot or channel/chat where technically possible.
+- Use webhooks for Telegram bot updates.
+
+WhatsApp:
+- Use official WhatsApp Business Cloud API only.
+- Support business message notifications where available.
+- Do not attempt to read personal WhatsApp messages or personal WhatsApp app notifications.
+
+TikTok:
+- Use official TikTok developer APIs only.
+- Add placeholder support for supported business/creator events where API access allows.
+- Do not scrape TikTok notifications.
+
+11. Trust and privacy copy
+
+Add a privacy explanation near the Connected Accounts page:
+
+“YourRadar only uses official provider APIs and only requests the minimum permissions needed to show supported notifications. We do not ask for your social media passwords, and we do not scrape your private accounts. Some platforms limit what can be monitored depending on account type, permissions, and app approval.”
+
+12. Acceptance criteria
+
+This update is complete when:
+- The main app background is white/off-white.
+- The colour palette matches the attached logo.
+- Radar elements are bold and visible across the app.
+- The attached logo is used properly.
+- Loading states use radar-style animations.
+- LinkedIn, Facebook, Telegram, WhatsApp, and TikTok appear as providers.
+- The notification filters include all providers.
+- Mock notifications work for all providers.
+- The UI clearly explains official API limitations.
+- The app does not use scraping or password-based social media access.

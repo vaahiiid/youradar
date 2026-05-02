@@ -21,7 +21,7 @@ import colors from "@/constants/colors";
 import { InboxProvider } from "@/context/InboxContext";
 
 SplashScreen.preventAutoHideAsync();
-SystemUI.setBackgroundColorAsync(colors.dark.brandNavy).catch(() => undefined);
+SystemUI.setBackgroundColorAsync(colors.light.background).catch(() => undefined);
 
 const queryClient = new QueryClient();
 
@@ -30,7 +30,7 @@ function RootLayoutNav() {
     <Stack
       screenOptions={{
         headerBackTitle: "Back",
-        contentStyle: { backgroundColor: colors.dark.brandNavy },
+        contentStyle: { backgroundColor: colors.light.background },
       }}
     >
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -68,11 +68,11 @@ export default function RootLayout() {
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
           <GestureHandlerRootView
-            style={{ flex: 1, backgroundColor: colors.dark.brandNavy }}
+            style={{ flex: 1, backgroundColor: colors.light.background }}
           >
             <KeyboardProvider>
               <InboxProvider>
-                <StatusBar style="light" />
+                <StatusBar style="dark" />
                 <RootLayoutNav />
                 {!bootDone ? (
                   <LoadingScreen onComplete={() => setBootDone(true)} />

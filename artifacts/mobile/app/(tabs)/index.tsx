@@ -1,6 +1,5 @@
-import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
@@ -16,20 +15,25 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AccountCard } from "@/components/AccountCard";
 import { Badge } from "@/components/Badge";
 import { NotificationCard } from "@/components/NotificationCard";
+import { ProviderIcon } from "@/components/ProviderIcon";
 import { RadarPulse } from "@/components/RadarPulse";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { Toast } from "@/components/Toast";
 import { useInbox } from "@/context/InboxContext";
 import { useColors } from "@/hooks/useColors";
-import type { EmailNotification, InstagramEventKind, Provider } from "@/types";
+import {
+  PROVIDER_LABELS,
+  PROVIDER_ORDER,
+  type EmailNotification,
+  type InstagramEventKind,
+  type Provider,
+} from "@/types";
 
 interface SimChip {
   id: string;
   label: string;
   provider: Provider;
   instagramKind?: InstagramEventKind;
-  icon: keyof typeof Feather.glyphMap;
-  color: string;
 }
 
 export default function DashboardScreen() {
@@ -48,9 +52,6 @@ export default function DashboardScreen() {
 
   const [toast, setToast] = useState<EmailNotification | null>(null);
   const recent = notifications.slice(0, 4);
-  const gmailCount = accounts.filter((a) => a.provider === "gmail").length;
-  const outlookCount = accounts.filter((a) => a.provider === "outlook").length;
-  const instagramCount = accounts.filter((a) => a.provider === "instagram").length;
 
   const fire = (provider: Provider, instagramKind?: InstagramEventKind) => {
     if (Platform.OS !== "web") {
@@ -65,52 +66,32 @@ export default function DashboardScreen() {
   };
 
   const simChips: SimChip[] = [
-    {
-      id: "gmail",
-      label: "Gmail",
-      provider: "gmail",
-      icon: "zap",
-      color: colors.gmail,
-    },
-    {
-      id: "outlook",
-      label: "Outlook",
-      provider: "outlook",
-      icon: "zap",
-      color: colors.outlook,
-    },
-    {
-      id: "ig-dm",
-      label: "IG DM",
-      provider: "instagram",
-      instagramKind: "dm",
-      icon: "send",
-      color: colors.instagram,
-    },
+    { id: "gmail", label: "Gmail", provider: "gmail" },
+    { id: "outlook", label: "Outlook", provider: "outlook" },
+    { id: "ig-dm", label: "IG · DM", provider: "instagram", instagramKind: "dm" },
     {
       id: "ig-comment",
-      label: "Comment",
+      label: "IG · Comment",
       provider: "instagram",
       instagramKind: "comment",
-      icon: "message-circle",
-      color: colors.instagram,
     },
     {
       id: "ig-mention",
-      label: "Mention",
+      label: "IG · Mention",
       provider: "instagram",
       instagramKind: "mention",
-      icon: "at-sign",
-      color: colors.instagram,
     },
     {
       id: "ig-insight",
-      label: "Insight",
+      label: "IG · Insight",
       provider: "instagram",
       instagramKind: "insight",
-      icon: "trending-up",
-      color: colors.instagram,
     },
+    { id: "linkedin", label: "LinkedIn", provider: "linkedin" },
+    { id: "facebook", label: "Facebook", provider: "facebook" },
+    { id: "telegram", label: "Telegram", provider: "telegram" },
+    { id: "whatsapp", label: "WhatsApp", provider: "whatsapp" },
+    { id: "tiktok", label: "TikTok", provider: "tiktok" },
   ];
 
   const bottomPad = (Platform.OS === "web" ? 100 : insets.bottom + 80) + 24;
@@ -149,60 +130,92 @@ export default function DashboardScreen() {
         contentContainerStyle={[styles.scroll, { paddingBottom: bottomPad }]}
         showsVerticalScrollIndicator={false}
       >
-        <LinearGradient
-          colors={["#0F1830", "#0B1020"]}
-          style={[styles.heroCard, { borderColor: "rgba(47,128,237,0.22)" }]}
+        <View
+          style={[
+            styles.heroCard,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+            },
+          ]}
         >
           <View style={styles.heroLeft}>
             <Text style={[styles.heroLabel, { color: colors.coolGrey }]}>
               Active signals
             </Text>
-            <Text style={[styles.heroNumber, { color: colors.offWhite }]}>
+            <Text style={[styles.heroNumber, { color: colors.foreground }]}>
               {unseenTotal}
             </Text>
-            <View style={styles.heroChipsRow}>
-              <ProviderChip
-                color={colors.gmail}
-                count={unseenByProvider.gmail}
-                label={`${gmailCount} Gmail`}
-                icon={
-                  <MaterialCommunityIcons name="gmail" size={11} color="#FFFFFF" />
-                }
-              />
-              <ProviderChip
-                color={colors.outlook}
-                count={unseenByProvider.outlook}
-                label={`${outlookCount} Outlook`}
-                icon={
-                  <MaterialCommunityIcons
-                    name="microsoft-outlook"
-                    size={11}
-                    color="#FFFFFF"
-                  />
-                }
-              />
-              <ProviderChip
-                color={colors.instagram}
-                count={unseenByProvider.instagram}
-                label={`${instagramCount} IG`}
-                icon={
-                  <MaterialCommunityIcons
-                    name="instagram"
-                    size={11}
-                    color="#FFFFFF"
-                  />
-                }
-              />
-            </View>
+            <Text style={[styles.heroHint, { color: colors.mutedForeground }]}>
+              {accounts.length === 0
+                ? "Connect a source to start scanning"
+                : `Scanning ${accounts.length} source${accounts.length === 1 ? "" : "s"} in real time`}
+            </Text>
           </View>
           <View style={styles.heroRadar}>
-            <RadarPulse size={120} reducedMotion={settings.reducedMotion} />
+            <RadarPulse size={130} reducedMotion={settings.reducedMotion} />
           </View>
-        </LinearGradient>
+        </View>
+
+        <View style={styles.providerSummaryGrid}>
+          {PROVIDER_ORDER.map((p) => {
+            const count = accounts.filter((a) => a.provider === p).length;
+            const unread = unseenByProvider[p];
+            return (
+              <View
+                key={p}
+                style={[
+                  styles.providerSummary,
+                  {
+                    backgroundColor: colors.card,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                <View style={styles.providerSummaryHead}>
+                  <ProviderIcon provider={p} size={22} />
+                  {unread > 0 ? (
+                    <View
+                      style={[
+                        styles.unreadPill,
+                        { backgroundColor: colors.destructive },
+                      ]}
+                    >
+                      <Text style={styles.unreadPillText}>{unread}</Text>
+                    </View>
+                  ) : null}
+                </View>
+                <Text
+                  style={[
+                    styles.providerSummaryLabel,
+                    { color: colors.foreground },
+                  ]}
+                >
+                  {PROVIDER_LABELS[p]}
+                </Text>
+                <Text
+                  style={[
+                    styles.providerSummaryMeta,
+                    { color: colors.mutedForeground },
+                  ]}
+                >
+                  {count > 0
+                    ? `${count} connected`
+                    : count === 0 && (p === "gmail" || p === "outlook" || p === "instagram")
+                      ? "Not connected"
+                      : "Not set up"}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
 
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
             Simulate signal
+          </Text>
+          <Text style={[styles.sectionHint, { color: colors.mutedForeground }]}>
+            Test mode
           </Text>
         </View>
         <ScrollView
@@ -211,30 +224,28 @@ export default function DashboardScreen() {
           contentContainerStyle={styles.chipsScroll}
         >
           {simChips.map((chip) => {
-            const enabled =
-              chip.provider === "gmail"
-                ? gmailCount > 0
-                : chip.provider === "outlook"
-                  ? outlookCount > 0
-                  : instagramCount > 0;
+            const tint =
+              chip.provider === "instagram"
+                ? colors.instagram
+                : chip.provider === "tiktok"
+                  ? colors.brandNavy
+                  : (colors as unknown as Record<string, string>)[chip.provider] ??
+                    colors.radarBlue;
             return (
               <Pressable
                 key={chip.id}
                 onPress={() => fire(chip.provider, chip.instagramKind)}
-                disabled={!enabled}
                 style={({ pressed }) => [
                   styles.simChip,
                   {
                     backgroundColor: colors.card,
                     borderColor: colors.border,
-                    opacity: !enabled ? 0.4 : pressed ? 0.85 : 1,
+                    opacity: pressed ? 0.85 : 1,
                   },
                 ]}
               >
-                <View
-                  style={[styles.simChipIcon, { backgroundColor: chip.color }]}
-                >
-                  <Feather name={chip.icon} size={12} color="#FFFFFF" />
+                <View style={[styles.simChipIcon, { backgroundColor: tint }]}>
+                  <Feather name="zap" size={11} color="#FFFFFF" />
                 </View>
                 <Text style={[styles.simChipLabel, { color: colors.foreground }]}>
                   {chip.label}
@@ -337,67 +348,6 @@ export default function DashboardScreen() {
   );
 }
 
-function ProviderChip({
-  color,
-  count,
-  label,
-  icon,
-}: {
-  color: string;
-  count: number;
-  label: string;
-  icon: React.ReactNode;
-}) {
-  return (
-    <View style={[chipStyles.wrap, { backgroundColor: "rgba(255,255,255,0.06)" }]}>
-      <View style={[chipStyles.dot, { backgroundColor: color }]}>{icon}</View>
-      <Text style={chipStyles.label}>{label}</Text>
-      {count > 0 ? (
-        <View style={chipStyles.countWrap}>
-          <Text style={chipStyles.count}>{count}</Text>
-        </View>
-      ) : null}
-    </View>
-  );
-}
-
-const chipStyles = StyleSheet.create({
-  wrap: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 999,
-  },
-  dot: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  label: {
-    color: "#F7F9FC",
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 11,
-  },
-  countWrap: {
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
-    paddingHorizontal: 4,
-    backgroundColor: "#FF3B30",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  count: {
-    color: "#FFFFFF",
-    fontFamily: "Inter_700Bold",
-    fontSize: 10,
-  },
-});
-
 const styles = StyleSheet.create({
   root: {
     flex: 1,
@@ -415,20 +365,25 @@ const styles = StyleSheet.create({
   },
   heroCard: {
     borderRadius: 24,
-    padding: 22,
-    marginBottom: 18,
+    padding: 20,
+    marginBottom: 14,
     borderWidth: 1,
     flexDirection: "row",
     alignItems: "center",
     overflow: "hidden",
+    shadowColor: "#0B1020",
+    shadowOpacity: 0.06,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 2,
   },
   heroLeft: {
     flex: 1,
     minWidth: 0,
   },
   heroRadar: {
-    width: 120,
-    height: 120,
+    width: 130,
+    height: 130,
     marginLeft: 8,
   },
   heroLabel: {
@@ -444,11 +399,52 @@ const styles = StyleSheet.create({
     marginTop: 4,
     lineHeight: 60,
   },
-  heroChipsRow: {
+  heroHint: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 12,
+    marginTop: 6,
+    lineHeight: 17,
+  },
+  providerSummaryGrid: {
     flexDirection: "row",
-    gap: 6,
-    marginTop: 10,
     flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 14,
+  },
+  providerSummary: {
+    width: "23.5%",
+    padding: 10,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: "flex-start",
+    gap: 6,
+  },
+  providerSummaryHead: {
+    width: "100%",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  unreadPill: {
+    minWidth: 18,
+    height: 18,
+    paddingHorizontal: 5,
+    borderRadius: 9,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  unreadPillText: {
+    color: "#FFFFFF",
+    fontFamily: "Inter_700Bold",
+    fontSize: 10,
+  },
+  providerSummaryLabel: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 12,
+  },
+  providerSummaryMeta: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 10,
   },
   sectionHeader: {
     flexDirection: "row",
@@ -460,6 +456,12 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontFamily: "Inter_700Bold",
+  },
+  sectionHint: {
+    fontSize: 11,
+    fontFamily: "Inter_600SemiBold",
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
   },
   link: {
     fontSize: 14,

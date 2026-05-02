@@ -5,7 +5,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { Badge } from "@/components/Badge";
 import { ProviderIcon } from "@/components/ProviderIcon";
 import { useColors } from "@/hooks/useColors";
-import type { ConnectedAccount } from "@/types";
+import { PROVIDER_LABELS, type ConnectedAccount } from "@/types";
 import { formatRelativeTime } from "@/utils/format";
 
 interface AccountCardProps {
@@ -13,12 +13,6 @@ interface AccountCardProps {
   unseen: number;
   rightSlot?: React.ReactNode;
 }
-
-const PROVIDER_LABELS: Record<ConnectedAccount["provider"], string> = {
-  gmail: "Gmail",
-  outlook: "Outlook",
-  instagram: "Instagram",
-};
 
 export function AccountCard({ account, unseen, rightSlot }: AccountCardProps) {
   const colors = useColors();
@@ -93,6 +87,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 14,
     marginBottom: 10,
+    shadowColor: "#0B1020",
+    shadowOpacity: 0.04,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 1,
   },
   row: {
     flexDirection: "row",

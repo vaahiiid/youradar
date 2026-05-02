@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ProviderIcon } from "@/components/ProviderIcon";
 import { useColors } from "@/hooks/useColors";
-import type { EmailNotification } from "@/types";
+import { PROVIDER_LABELS, type EmailNotification } from "@/types";
 
 interface ToastProps {
   notification: EmailNotification | null;
@@ -39,6 +39,7 @@ export function Toast({ notification, onPress, onDismiss }: ToastProps) {
 
   if (!notification) return null;
   const topInset = Platform.OS === "web" ? Math.max(insets.top, 67) : insets.top;
+  const providerLabel = PROVIDER_LABELS[notification.provider];
 
   return (
     <Animated.View
@@ -66,7 +67,7 @@ export function Toast({ notification, onPress, onDismiss }: ToastProps) {
             numberOfLines={1}
             style={[styles.title, { color: colors.foreground }]}
           >
-            New email from {notification.senderName}
+            New {providerLabel} signal · {notification.senderName}
           </Text>
           <Text
             numberOfLines={1}
@@ -94,7 +95,7 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 18,
     borderWidth: 1.5,
-    shadowColor: "#000",
+    shadowColor: "#0B1020",
     shadowOpacity: 0.15,
     shadowOffset: { width: 0, height: 8 },
     shadowRadius: 18,

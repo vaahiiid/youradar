@@ -1,35 +1,41 @@
-const navy = {
-  text: "#F7F9FC",
+const lightPalette = {
+  text: "#0B1020",
   tint: "#2F80ED",
 
-  background: "#0B1020",
-  foreground: "#F7F9FC",
+  background: "#FFFFFF",
+  foreground: "#0B1020",
 
-  card: "#141A30",
-  cardForeground: "#F7F9FC",
-  surfaceElevated: "#1A2140",
+  card: "#FFFFFF",
+  cardForeground: "#0B1020",
+  surfaceElevated: "#F7F9FC",
 
   primary: "#2F80ED",
-  primaryForeground: "#0B1020",
+  primaryForeground: "#FFFFFF",
 
-  secondary: "#1A2140",
-  secondaryForeground: "#A7B0C0",
+  secondary: "#F7F9FC",
+  secondaryForeground: "#0B1020",
 
-  muted: "#141A30",
-  mutedForeground: "#A7B0C0",
+  muted: "#F7F9FC",
+  mutedForeground: "#667085",
 
-  accent: "#1A2140",
+  accent: "#F7F9FC",
   accentForeground: "#2F80ED",
 
   destructive: "#FF3B30",
   destructiveForeground: "#FFFFFF",
 
-  border: "#23294A",
-  input: "#23294A",
+  border: "#E5E7EB",
+  input: "#E5E7EB",
 
   gmail: "#EA4335",
-  outlook: "#0A66C2",
+  outlook: "#0078D4",
   instagram: "#E1306C",
+  linkedin: "#0A66C2",
+  facebook: "#1877F2",
+  telegram: "#229ED9",
+  whatsapp: "#25D366",
+  tiktok: "#010101",
+
   success: "#2F80ED",
   warning: "#F5A524",
 
@@ -37,14 +43,14 @@ const navy = {
   radarBlue: "#2F80ED",
   softCyan: "#56CCF2",
   violetAccent: "#8B5CF6",
-  coolGrey: "#A7B0C0",
+  coolGrey: "#667085",
   offWhite: "#F7F9FC",
   notificationRed: "#FF3B30",
 };
 
 const colors = {
-  light: navy,
-  dark: navy,
+  light: lightPalette,
+  dark: lightPalette,
   radius: 16,
 };
 

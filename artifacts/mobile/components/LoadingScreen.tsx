@@ -85,7 +85,7 @@ export function LoadingScreen({ onComplete, durationMs = 2400 }: LoadingScreenPr
         <View style={styles.radarStack}>
           <RadarPulse size={300} reducedMotion={reducedMotion} />
           <View style={styles.logoBadge} pointerEvents="none">
-            <BrandLogo height={36} tintColor={colors.dark.offWhite} />
+            <BrandLogo height={36} tintColor={colors.light.brandNavy} />
           </View>
         </View>
 
@@ -123,7 +123,7 @@ export function LoadingScreen({ onComplete, durationMs = 2400 }: LoadingScreenPr
 const styles = StyleSheet.create({
   root: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.dark.brandNavy,
+    backgroundColor: colors.light.background,
     alignItems: "center",
     justifyContent: "center",
     zIndex: 9999,
@@ -144,23 +144,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 10,
     borderRadius: 16,
-    backgroundColor: "rgba(20, 26, 48, 0.78)",
+    backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: "rgba(47, 128, 237, 0.45)",
+    borderColor: "rgba(47, 128, 237, 0.35)",
     shadowColor: "#2F80ED",
-    shadowOpacity: 0.4,
+    shadowOpacity: 0.18,
     shadowRadius: 18,
-    shadowOffset: { width: 0, height: 0 },
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
   },
   tagline: {
-    color: colors.dark.coolGrey,
+    color: colors.light.coolGrey,
     fontFamily: "Inter_500Medium",
     fontSize: 13,
     letterSpacing: 0.4,
     marginTop: 24,
   },
   percent: {
-    color: colors.dark.offWhite,
+    color: colors.light.brandNavy,
     fontFamily: "Inter_700Bold",
     fontSize: 38,
     letterSpacing: -1,
@@ -172,13 +173,13 @@ const styles = StyleSheet.create({
     width: 220,
     height: 6,
     borderRadius: 3,
-    backgroundColor: "rgba(167, 176, 192, 0.18)",
+    backgroundColor: "rgba(11, 16, 32, 0.08)",
     overflow: "hidden",
     position: "relative",
   },
   barFill: {
     height: "100%",
-    backgroundColor: colors.dark.radarBlue,
+    backgroundColor: colors.light.radarBlue,
     borderRadius: 3,
   },
   barGlow: {
@@ -186,9 +187,9 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     height: "100%",
-    backgroundColor: colors.dark.softCyan,
+    backgroundColor: colors.light.softCyan,
     borderRadius: 3,
-    shadowColor: colors.dark.softCyan,
+    shadowColor: colors.light.softCyan,
     shadowOpacity: 1,
     shadowRadius: 14,
     shadowOffset: { width: 0, height: 0 },
@@ -202,7 +203,7 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: colors.dark.softCyan,
+    backgroundColor: colors.light.radarBlue,
   },
   footer: {
     position: "absolute",
@@ -210,7 +211,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   footerText: {
-    color: colors.dark.coolGrey,
+    color: colors.light.coolGrey,
     fontFamily: "Inter_500Medium",
     fontSize: 11,
     letterSpacing: 1.5,

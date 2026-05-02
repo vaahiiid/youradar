@@ -16,13 +16,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ProviderIcon } from "@/components/ProviderIcon";
 import { getInstagramEventLabel, useInbox } from "@/context/InboxContext";
 import { useColors } from "@/hooks/useColors";
+import { PROVIDER_LABELS } from "@/types";
 import { formatFullDate, getInitials } from "@/utils/format";
-
-const PROVIDER_NAMES = {
-  gmail: "Gmail",
-  outlook: "Outlook",
-  instagram: "Instagram",
-} as const;
 
 export default function NotificationDetailScreen() {
   const colors = useColors();
@@ -65,9 +60,14 @@ export default function NotificationDetailScreen() {
     );
   }
 
-  const providerName = PROVIDER_NAMES[notification.provider];
+  const providerName = PROVIDER_LABELS[notification.provider];
   const isInstagram = notification.provider === "instagram";
   const eventKind = notification.instagramEventKind;
+  const isHandleProvider =
+    isInstagram ||
+    notification.provider === "linkedin" ||
+    notification.provider === "telegram" ||
+    notification.provider === "tiktok";
 
   const openInProvider = async () => {
     if (!notification.providerWebLink) return;
@@ -131,12 +131,7 @@ export default function NotificationDetailScreen() {
               { backgroundColor: isInstagram ? colors.instagram : colors.radarBlue },
             ]}
           >
-            <Text
-              style={[
-                styles.avatarText,
-                { color: isInstagram ? "#FFFFFF" : colors.brandNavy },
-              ]}
-            >
+            <Text style={[styles.avatarText, { color: "#FFFFFF" }]}>
               {getInitials(notification.senderName)}
             </Text>
           </View>
@@ -154,7 +149,7 @@ export default function NotificationDetailScreen() {
               style={[styles.toLine, { color: colors.mutedForeground }]}
               numberOfLines={1}
             >
-              {isInstagram ? "via" : "to"}{" "}
+              {isHandleProvider ? "via" : "to"}{" "}
               {account?.emailAddress ?? notification.emailAddress}
             </Text>
           </View>
@@ -211,8 +206,8 @@ export default function NotificationDetailScreen() {
             },
           ]}
         >
-          <Feather name="external-link" size={18} color={colors.brandNavy} />
-          <Text style={[styles.openBtnText, { color: colors.brandNavy }]}>
+          <Feather name="external-link" size={18} color={colors.primaryForeground} />
+          <Text style={[styles.openBtnText, { color: colors.primaryForeground }]}>
             Open in {providerName}
           </Text>
         </Pressable>

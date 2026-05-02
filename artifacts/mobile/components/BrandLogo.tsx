@@ -2,6 +2,8 @@ import { Image, ImageStyle } from "expo-image";
 import React from "react";
 import { StyleProp } from "react-native";
 
+import colors from "@/constants/colors";
+
 const wordmark = require("@/assets/images/youradar-wordmark.png");
 
 interface BrandLogoProps {
@@ -17,7 +19,7 @@ export function BrandLogo({ height = 28, style, tintColor }: BrandLogoProps) {
       source={wordmark}
       style={[{ height, width }, style]}
       contentFit="contain"
-      tintColor={tintColor}
+      tintColor={tintColor ?? colors.light.brandNavy}
     />
   );
 }

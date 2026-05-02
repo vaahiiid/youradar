@@ -6,6 +6,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   View,
 } from "react-native";
@@ -13,13 +14,18 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { AccountCard } from "@/components/AccountCard";
 import { ConnectAccountSheet } from "@/components/ConnectAccountSheet";
-import { EmptyState } from "@/components/EmptyState";
+import { ProviderIcon } from "@/components/ProviderIcon";
 import { RadarLoader } from "@/components/RadarLoader";
 import { RadarSpinner } from "@/components/RadarSpinner";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { useInbox } from "@/context/InboxContext";
 import { useColors } from "@/hooks/useColors";
-import type { Provider } from "@/types";
+import {
+  PROVIDER_LABELS,
+  PROVIDER_ORDER,
+  isProviderImplemented,
+  type Provider,
+} from "@/types";
 
 export default function AccountsScreen() {
   const colors = useColors();
@@ -27,10 +33,10 @@ export default function AccountsScreen() {
   const {
     accounts,
     unseenByAccount,
-    instagramConfigured,
     connectAccount,
     disconnectAccount,
     reconnectAccount,
+    toggleAccountNotifications,
     settings,
   } = useInbox();
   const [sheetProvider, setSheetProvider] = useState<Provider | null>(null);
@@ -57,6 +63,8 @@ export default function AccountsScreen() {
 
   const bottomPad = (Platform.OS === "web" ? 100 : insets.bottom + 80) + 24;
 
+  const accountsByProvider = (p: Provider) => accounts.filter((a) => a.provider === p);
+
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       <ScreenHeader
@@ -77,65 +85,126 @@ export default function AccountsScreen() {
           >
             <RadarSpinner
               size={18}
-              color={colors.softCyan}
+              color={colors.radarBlue}
               reducedMotion={settings.reducedMotion}
             />
             <Text style={[styles.scanText, { color: colors.coolGrey }]}>
               {`Live scan · ${accounts.length} source${accounts.length === 1 ? "" : "s"} on radar`}
             </Text>
-            <View style={[styles.liveDot, { backgroundColor: colors.softCyan }]} />
+            <View style={[styles.liveDot, { backgroundColor: colors.radarBlue }]} />
           </View>
         ) : null}
 
-        <View style={styles.connectGrid}>
-          <ConnectButton
-            provider="gmail"
-            label="Gmail"
-            color={colors.gmail}
-            onPress={() => setSheetProvider("gmail")}
-          />
-          <ConnectButton
-            provider="outlook"
-            label="Outlook"
-            color={colors.outlook}
-            onPress={() => setSheetProvider("outlook")}
-          />
-          <ConnectButton
-            provider="instagram"
-            label="Instagram"
-            color={colors.instagram}
-            onPress={() => setSheetProvider("instagram")}
-            full
-          />
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
+          ADD A SOURCE
+        </Text>
+        <View style={styles.providerGrid}>
+          {PROVIDER_ORDER.map((p) => {
+            const implemented = isProviderImplemented(p);
+            return (
+              <Pressable
+                key={p}
+                onPress={() => setSheetProvider(p)}
+                style={({ pressed }) => [
+                  styles.providerTile,
+                  {
+                    backgroundColor: colors.card,
+                    borderColor: colors.border,
+                    opacity: pressed ? 0.88 : 1,
+                  },
+                ]}
+              >
+                <ProviderIcon provider={p} size={36} />
+                <View style={styles.providerTileBody}>
+                  <Text
+                    style={[
+                      styles.providerTileLabel,
+                      { color: colors.foreground },
+                    ]}
+                  >
+                    {PROVIDER_LABELS[p]}
+                  </Text>
+                  {!implemented ? (
+                    <View
+                      style={[
+                        styles.roadmapPill,
+                        {
+                          backgroundColor: "rgba(139, 92, 246, 0.10)",
+                          borderColor: "rgba(139, 92, 246, 0.40)",
+                        },
+                      ]}
+                    >
+                      <Feather name="clock" size={9} color={colors.violetAccent} />
+                      <Text
+                        style={[
+                          styles.roadmapPillText,
+                          { color: colors.violetAccent },
+                        ]}
+                      >
+                        API setup required
+                      </Text>
+                    </View>
+                  ) : (
+                    <Text
+                      style={[
+                        styles.providerTileMeta,
+                        { color: colors.mutedForeground },
+                      ]}
+                    >
+                      {accountsByProvider(p).length > 0
+                        ? `${accountsByProvider(p).length} connected`
+                        : "Tap to connect"}
+                    </Text>
+                  )}
+                </View>
+                <Feather name="plus" size={16} color={colors.radarBlue} />
+              </Pressable>
+            );
+          })}
         </View>
 
-        {!instagramConfigured ? (
-          <View
-            style={[
-              styles.warnCard,
-              {
-                backgroundColor: "rgba(245, 165, 36, 0.10)",
-                borderColor: "rgba(245, 165, 36, 0.45)",
-              },
-            ]}
-          >
-            <View style={styles.warnHeader}>
-              <Feather name="alert-triangle" size={16} color={colors.warning} />
-              <Text style={[styles.warnTitle, { color: colors.warning }]}>
-                Instagram is in preview mode
-              </Text>
+        <View
+          style={[
+            styles.privacyCard,
+            { backgroundColor: colors.card, borderColor: colors.border },
+          ]}
+        >
+          <View style={styles.privacyHeader}>
+            <View
+              style={[styles.privacyIcon, { backgroundColor: colors.secondary }]}
+            >
+              <Feather name="shield" size={16} color={colors.radarBlue} />
             </View>
-            <Text style={[styles.warnBody, { color: colors.coolGrey }]}>
-              Instagram integration is not fully configured yet. Connect a
-              professional Instagram account and complete Meta app setup to
-              receive supported Instagram events.
-            </Text>
-            <Text style={[styles.warnBody, { color: colors.coolGrey, marginTop: 6 }]}>
-              Personal Instagram app notifications cannot be imported directly
-              unless supported by official APIs.
+            <Text style={[styles.privacyTitle, { color: colors.foreground }]}>
+              Official APIs only · no scraping, no passwords
             </Text>
           </View>
-        ) : null}
+          <Text style={[styles.privacyBody, { color: colors.mutedForeground }]}>
+            YourRadar never asks for your password. We only connect through official
+            provider APIs and OAuth — Google, Microsoft, Meta, LinkedIn, Telegram
+            Bot API, WhatsApp Business API, and TikTok Developer APIs. Tokens stay
+            on the server, refresh automatically, and never reach this device.
+          </Text>
+          <Text
+            style={[
+              styles.privacyBody,
+              { color: colors.mutedForeground, marginTop: 6 },
+            ]}
+          >
+            Personal app notifications that are not exposed by official APIs (for
+            example consumer Facebook or personal WhatsApp messages) cannot be
+            mirrored — by design.
+          </Text>
+        </View>
+
+        <Text
+          style={[
+            styles.sectionLabel,
+            { color: colors.mutedForeground, marginTop: 18 },
+          ]}
+        >
+          YOUR CONNECTED SOURCES
+        </Text>
 
         {accounts.length === 0 ? (
           <View style={styles.emptyWrap}>
@@ -146,15 +215,34 @@ export default function AccountsScreen() {
           </View>
         ) : (
           accounts.map((account) => (
-            <AccountCard
-              key={account.id}
-              account={account}
-              unseen={unseenByAccount[account.id] ?? 0}
-              rightSlot={
-                <View style={styles.rowActions}>
-                  {account.status !== "connected" ? (
+            <View key={account.id}>
+              <AccountCard
+                account={account}
+                unseen={unseenByAccount[account.id] ?? 0}
+                rightSlot={
+                  <View style={styles.rowActions}>
+                    {account.status !== "connected" ? (
+                      <Pressable
+                        onPress={() => reconnectAccount(account.id)}
+                        style={({ pressed }) => [
+                          styles.iconBtn,
+                          {
+                            backgroundColor: colors.secondary,
+                            opacity: pressed ? 0.85 : 1,
+                          },
+                        ]}
+                      >
+                        <Feather
+                          name="refresh-cw"
+                          size={16}
+                          color={colors.radarBlue}
+                        />
+                      </Pressable>
+                    ) : null}
                     <Pressable
-                      onPress={() => reconnectAccount(account.id)}
+                      onPress={() =>
+                        confirmDisconnect(account.id, account.emailAddress)
+                      }
                       style={({ pressed }) => [
                         styles.iconBtn,
                         {
@@ -164,59 +252,50 @@ export default function AccountsScreen() {
                       ]}
                     >
                       <Feather
-                        name="refresh-cw"
+                        name="trash-2"
                         size={16}
-                        color={colors.radarBlue}
+                        color={colors.destructive}
                       />
                     </Pressable>
-                  ) : null}
-                  <Pressable
-                    onPress={() =>
-                      confirmDisconnect(account.id, account.emailAddress)
-                    }
-                    style={({ pressed }) => [
-                      styles.iconBtn,
-                      {
-                        backgroundColor: colors.secondary,
-                        opacity: pressed ? 0.85 : 1,
-                      },
-                    ]}
-                  >
-                    <Feather
-                      name="trash-2"
-                      size={16}
-                      color={colors.destructive}
-                    />
-                  </Pressable>
-                </View>
-              }
-            />
+                  </View>
+                }
+              />
+              <View
+                style={[
+                  styles.toggleRow,
+                  {
+                    backgroundColor: colors.card,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                <Feather
+                  name={account.notificationsEnabled ? "bell" : "bell-off"}
+                  size={14}
+                  color={
+                    account.notificationsEnabled ? colors.radarBlue : colors.mutedForeground
+                  }
+                />
+                <Text
+                  style={[styles.toggleLabel, { color: colors.foreground }]}
+                >
+                  Notifications
+                </Text>
+                <Text
+                  style={[styles.toggleHint, { color: colors.mutedForeground }]}
+                >
+                  {account.notificationsEnabled ? "On" : "Muted"}
+                </Text>
+                <Switch
+                  value={account.notificationsEnabled}
+                  onValueChange={() => toggleAccountNotifications(account.id)}
+                  trackColor={{ true: colors.radarBlue, false: colors.border }}
+                  thumbColor={Platform.OS === "android" ? "#FFFFFF" : "#FFFFFF"}
+                />
+              </View>
+            </View>
           ))
         )}
-
-        <View
-          style={[
-            styles.infoCard,
-            { backgroundColor: colors.card, borderColor: colors.border },
-          ]}
-        >
-          <View style={styles.infoHeader}>
-            <View
-              style={[styles.infoIcon, { backgroundColor: colors.secondary }]}
-            >
-              <Feather name="lock" size={16} color={colors.softCyan} />
-            </View>
-            <Text style={[styles.infoTitle, { color: colors.foreground }]}>
-              How connections work
-            </Text>
-          </View>
-          <Text style={[styles.infoBody, { color: colors.coolGrey }]}>
-            YourRadar never stores your password. Real connections use Google
-            and Microsoft OAuth for email, and official Meta APIs for Instagram —
-            tokens stay on the server, refresh automatically, and never reach
-            this device.
-          </Text>
-        </View>
       </ScrollView>
 
       <ConnectAccountSheet
@@ -229,80 +308,89 @@ export default function AccountsScreen() {
   );
 }
 
-function ConnectButton({
-  provider: _provider,
-  label,
-  color,
-  onPress,
-  full,
-}: {
-  provider: Provider;
-  label: string;
-  color: string;
-  onPress: () => void;
-  full?: boolean;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.connectBtn,
-        {
-          backgroundColor: color,
-          opacity: pressed ? 0.9 : 1,
-          flexBasis: full ? "100%" : "48%",
-        },
-      ]}
-    >
-      <Feather name="plus" size={18} color="#FFFFFF" />
-      <Text style={styles.connectBtnText}>Connect {label}</Text>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   root: { flex: 1 },
   scroll: { paddingHorizontal: 20 },
-  connectGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
+  sectionLabel: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 11,
+    letterSpacing: 1,
+    marginBottom: 10,
+    paddingHorizontal: 4,
+  },
+  providerGrid: {
+    gap: 8,
     marginBottom: 16,
   },
-  connectBtn: {
-    flexGrow: 1,
+  providerTile: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    paddingVertical: 14,
+    gap: 12,
+    padding: 12,
     borderRadius: 16,
+    borderWidth: 1,
+    shadowColor: "#0B1020",
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 1,
   },
-  connectBtnText: {
-    color: "#FFFFFF",
+  providerTileBody: {
+    flex: 1,
+    minWidth: 0,
+    gap: 4,
+  },
+  providerTileLabel: {
     fontFamily: "Inter_700Bold",
     fontSize: 14,
   },
-  warnCard: {
-    padding: 14,
-    borderRadius: 16,
-    borderWidth: 1,
-    marginBottom: 16,
-  },
-  warnHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 6,
-  },
-  warnTitle: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 13,
-  },
-  warnBody: {
+  providerTileMeta: {
     fontFamily: "Inter_500Medium",
     fontSize: 12,
-    lineHeight: 17,
+  },
+  roadmapPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 999,
+    borderWidth: 1,
+    alignSelf: "flex-start",
+  },
+  roadmapPillText: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 9,
+    letterSpacing: 0.3,
+  },
+  privacyCard: {
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: 16,
+    gap: 8,
+    marginBottom: 4,
+  },
+  privacyHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  privacyIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  privacyTitle: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 14,
+    flex: 1,
+  },
+  privacyBody: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 12,
+    lineHeight: 18,
   },
   rowActions: {
     flexDirection: "row",
@@ -315,33 +403,26 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  infoCard: {
-    borderRadius: 18,
-    borderWidth: 1,
-    padding: 16,
-    marginTop: 16,
-    gap: 8,
-  },
-  infoHeader: {
+  toggleRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginTop: -4,
+    marginBottom: 12,
+    marginHorizontal: 4,
   },
-  infoIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  infoTitle: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 15,
-  },
-  infoBody: {
-    fontFamily: "Inter_500Medium",
+  toggleLabel: {
+    fontFamily: "Inter_600SemiBold",
     fontSize: 13,
-    lineHeight: 19,
+    flex: 1,
+  },
+  toggleHint: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 12,
   },
   scanRow: {
     flexDirection: "row",
@@ -363,7 +444,7 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    shadowColor: "#56CCF2",
+    shadowColor: "#2F80ED",
     shadowOpacity: 0.9,
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 0 },

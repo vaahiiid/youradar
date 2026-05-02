@@ -8,16 +8,17 @@ import React, {
   useState,
 } from "react";
 
-import type {
-  ConnectedAccount,
-  EmailNotification,
-  InstagramEventKind,
-  Provider,
-  SettingsState,
+import {
+  PROVIDER_ORDER,
+  type ConnectedAccount,
+  type EmailNotification,
+  type InstagramEventKind,
+  type Provider,
+  type SettingsState,
 } from "@/types";
 import { uid } from "@/utils/format";
 
-const STORAGE_KEY = "yourradar_state_v2";
+const STORAGE_KEY = "yourradar_state_v3";
 
 interface PersistedState {
   accounts: ConnectedAccount[];
@@ -33,7 +34,8 @@ interface InboxContextValue {
   unseenTotal: number;
   unseenByAccount: Record<string, number>;
   unseenByProvider: Record<Provider, number>;
-  instagramConfigured: boolean;
+  /** Providers we have full mock OAuth + sample data for (Gmail/Outlook/Instagram). */
+  fullyConfiguredProviders: Provider[];
   connectAccount: (
     provider: Provider,
     handleOrEmail: string,
@@ -41,6 +43,7 @@ interface InboxContextValue {
   ) => void;
   disconnectAccount: (accountId: string) => void;
   reconnectAccount: (accountId: string) => void;
+  toggleAccountNotifications: (accountId: string) => void;
   simulateIncoming: (
     provider: Provider,
     accountId?: string,
@@ -201,6 +204,111 @@ export function getInstagramEventLabel(kind: InstagramEventKind): string {
   return INSTAGRAM_LABELS[kind];
 }
 
+interface SocialSample {
+  senderName: string;
+  senderHandle: string;
+  subject: string;
+  snippet: string;
+  body: string;
+  link: (handle: string) => string;
+}
+
+const SOCIAL_SAMPLES: Record<
+  "linkedin" | "facebook" | "telegram" | "whatsapp" | "tiktok",
+  SocialSample[]
+> = {
+  linkedin: [
+    {
+      senderName: "Priya Mehta",
+      senderHandle: "Recruiter at Stripe",
+      subject: "New connection request",
+      snippet: "Hi! I came across your profile and wanted to connect about a Senior PM role…",
+      body: "Hi! I came across your profile and wanted to connect about a Senior PM role on the Atlas team. Open to a quick chat next week?",
+      link: () => "https://www.linkedin.com/messaging/",
+    },
+    {
+      senderName: "LinkedIn",
+      senderHandle: "Engagement",
+      subject: "Your post is performing 4x your average",
+      snippet: "Your post on Notification UX has 1,240 impressions in the first 6 hours.",
+      body: "Your post on 'Designing notification systems that respect attention' has 1,240 impressions and 38 reactions in its first 6 hours — 4x your account average.",
+      link: () => "https://www.linkedin.com/feed/",
+    },
+  ],
+  facebook: [
+    {
+      senderName: "Jordan Reyes",
+      senderHandle: "Visitor on Acme Page",
+      subject: "New message to your Page",
+      snippet: "Hi! Are you open this weekend? Wanted to drop by with a friend.",
+      body: "Hi! Are you open this weekend? Wanted to drop by with a friend.",
+      link: () => "https://business.facebook.com/latest/inbox/",
+    },
+    {
+      senderName: "Acme Page",
+      senderHandle: "Page activity",
+      subject: "3 new comments on your latest post",
+      snippet: "Your post 'Summer hours are here ☀️' received 3 new comments.",
+      body: "Your post 'Summer hours are here ☀️' received 3 new comments and 12 reactions in the last hour.",
+      link: () => "https://business.facebook.com/",
+    },
+  ],
+  telegram: [
+    {
+      senderName: "Build Updates Bot",
+      senderHandle: "@build_updates_bot",
+      subject: "Deploy succeeded · main",
+      snippet: "Deployment v3.18.2 to production succeeded in 1m 42s. View run.",
+      body: "Deployment v3.18.2 to production succeeded in 1m 42s. 0 errors, 12 services updated. View full run on the dashboard.",
+      link: () => "https://t.me/",
+    },
+    {
+      senderName: "Founders Channel",
+      senderHandle: "@founders_chat",
+      subject: "New post in Founders Channel",
+      snippet: "Sam: Has anyone shipped a launch via Product Hunt this quarter?",
+      body: "Sam: Has anyone shipped a launch via Product Hunt this quarter? Curious about timing and whether it still moves the needle.",
+      link: () => "https://t.me/",
+    },
+  ],
+  whatsapp: [
+    {
+      senderName: "Acme Support",
+      senderHandle: "+1 (555) 010-2024",
+      subject: "Customer started a new conversation",
+      snippet: "Hi — my order #4821 is showing delivered but I haven't received it. Can you help?",
+      body: "Hi — my order #4821 is showing delivered but I haven't received it. Can you help?",
+      link: () => "https://business.whatsapp.com/",
+    },
+    {
+      senderName: "WhatsApp Business",
+      senderHandle: "Webhook event",
+      subject: "Template message delivered",
+      snippet: "Your appointment_reminder template was delivered to 142 of 145 recipients.",
+      body: "Your appointment_reminder template was delivered to 142 of 145 recipients. 3 failed (invalid number).",
+      link: () => "https://business.whatsapp.com/",
+    },
+  ],
+  tiktok: [
+    {
+      senderName: "TikTok Creator",
+      senderHandle: "@yourhandle",
+      subject: "Your video crossed 50K views",
+      snippet: "Your video '3 things I learned' just crossed 50,000 views in 18 hours.",
+      body: "Your video '3 things I learned shipping a notification app' just crossed 50,000 views in 18 hours, with a 38% completion rate. Trending in your category.",
+      link: () => "https://www.tiktok.com/",
+    },
+    {
+      senderName: "milo.makes",
+      senderHandle: "@milo.makes",
+      subject: "New comment on your video",
+      snippet: "milo.makes: tutorial please 🙏 the cuts are so clean",
+      body: "milo.makes commented: tutorial please 🙏 the cuts are so clean",
+      link: () => "https://www.tiktok.com/",
+    },
+  ],
+};
+
 const DEFAULT_SETTINGS: SettingsState = {
   pushEnabled: true,
   inAppToastsEnabled: true,
@@ -208,17 +316,16 @@ const DEFAULT_SETTINGS: SettingsState = {
   reducedMotion: false,
 };
 
-function pickEmailSample() {
-  return EMAIL_SAMPLES[Math.floor(Math.random() * EMAIL_SAMPLES.length)]!;
-}
-
-function pickInstagramSample(kind: InstagramEventKind): InstagramSample {
-  const list = INSTAGRAM_SAMPLES[kind];
+function pickFrom<T>(list: T[]): T {
   return list[Math.floor(Math.random() * list.length)]!;
 }
 
+function pickInstagramSample(kind: InstagramEventKind): InstagramSample {
+  return pickFrom(INSTAGRAM_SAMPLES[kind]);
+}
+
 function buildEmailNotification(account: ConnectedAccount): EmailNotification {
-  const sample = pickEmailSample();
+  const sample = pickFrom(EMAIL_SAMPLES);
   const id = uid();
   const baseLink =
     account.provider === "gmail"
@@ -272,6 +379,43 @@ function buildInstagramNotification(
   };
 }
 
+function buildSocialNotification(account: ConnectedAccount): EmailNotification {
+  const provider = account.provider as
+    | "linkedin"
+    | "facebook"
+    | "telegram"
+    | "whatsapp"
+    | "tiktok";
+  const sample = pickFrom(SOCIAL_SAMPLES[provider]);
+  return {
+    id: uid(),
+    accountId: account.id,
+    provider: account.provider,
+    emailAddress: account.emailAddress,
+    senderName: sample.senderName,
+    senderEmail: sample.senderHandle,
+    subject: sample.subject,
+    snippet: sample.snippet,
+    bodyPreview: sample.body,
+    receivedAt: Date.now(),
+    providerWebLink: sample.link(account.emailAddress),
+    isSeen: false,
+  };
+}
+
+function defaultEmptyByProvider(): Record<Provider, number> {
+  return {
+    gmail: 0,
+    outlook: 0,
+    instagram: 0,
+    linkedin: 0,
+    facebook: 0,
+    telegram: 0,
+    whatsapp: 0,
+    tiktok: 0,
+  };
+}
+
 function makeSeed(): PersistedState {
   const now = Date.now();
   const accounts: ConnectedAccount[] = [
@@ -283,6 +427,7 @@ function makeSeed(): PersistedState {
       status: "connected",
       lastSyncAt: now - 1000 * 60 * 2,
       createdAt: now - 1000 * 60 * 60 * 24 * 7,
+      notificationsEnabled: true,
     },
     {
       id: uid(),
@@ -292,6 +437,7 @@ function makeSeed(): PersistedState {
       status: "connected",
       lastSyncAt: now - 1000 * 60 * 12,
       createdAt: now - 1000 * 60 * 60 * 24 * 14,
+      notificationsEnabled: true,
     },
     {
       id: uid(),
@@ -302,6 +448,7 @@ function makeSeed(): PersistedState {
       lastSyncAt: now - 1000 * 60 * 6,
       createdAt: now - 1000 * 60 * 60 * 24 * 3,
       instagramKind: "creator",
+      notificationsEnabled: true,
     },
   ];
 
@@ -430,6 +577,60 @@ function makeSeed(): PersistedState {
   return { accounts, notifications, settings: DEFAULT_SETTINGS };
 }
 
+function buildDemoAccount(provider: Provider): ConnectedAccount {
+  const handles: Record<Provider, { addr: string; display: string }> = {
+    gmail: { addr: "demo@gmail.com", display: "Demo" },
+    outlook: { addr: "demo@outlook.com", display: "Demo" },
+    instagram: { addr: "@demo.creator", display: "Demo" },
+    linkedin: { addr: "linkedin.com/in/demo", display: "Demo" },
+    facebook: { addr: "Demo Page", display: "Demo" },
+    telegram: { addr: "@demo_channel", display: "Demo" },
+    whatsapp: { addr: "+1 555 010 0000", display: "Demo" },
+    tiktok: { addr: "@demo.creator", display: "Demo" },
+  };
+  const h = handles[provider];
+  return {
+    id: `demo-${provider}`,
+    provider,
+    emailAddress: h.addr,
+    displayName: h.display,
+    status: "connected",
+    lastSyncAt: Date.now(),
+    createdAt: Date.now(),
+    notificationsEnabled: true,
+  };
+}
+
+function normalizeIdentifier(provider: Provider, raw: string): string {
+  const trimmed = raw.trim();
+  if (provider === "instagram" || provider === "tiktok") {
+    return trimmed.startsWith("@") ? trimmed.toLowerCase() : `@${trimmed.toLowerCase()}`;
+  }
+  if (provider === "telegram") {
+    return trimmed.startsWith("@") || trimmed.includes(":")
+      ? trimmed
+      : `@${trimmed}`;
+  }
+  if (provider === "gmail" || provider === "outlook") {
+    return trimmed.toLowerCase();
+  }
+  return trimmed;
+}
+
+function deriveDisplayName(provider: Provider, normalized: string): string {
+  if (provider === "instagram" || provider === "tiktok" || provider === "telegram") {
+    return normalized.replace(/^@/, "");
+  }
+  if (provider === "gmail" || provider === "outlook") {
+    return normalized.split("@")[0]!;
+  }
+  if (provider === "linkedin") {
+    const parts = normalized.split("/").filter(Boolean);
+    return parts[parts.length - 1] ?? normalized;
+  }
+  return normalized;
+}
+
 export function InboxProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
   const [accounts, setAccounts] = useState<ConnectedAccount[]>([]);
@@ -444,7 +645,12 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
         if (cancelled) return;
         if (raw) {
           const parsed = JSON.parse(raw) as PersistedState;
-          setAccounts(parsed.accounts ?? []);
+          // Backfill notificationsEnabled on accounts persisted with the older schema.
+          const migratedAccounts = (parsed.accounts ?? []).map((a) => ({
+            ...a,
+            notificationsEnabled: a.notificationsEnabled ?? true,
+          }));
+          setAccounts(migratedAccounts);
           setNotifications(parsed.notifications ?? []);
           setSettings({ ...DEFAULT_SETTINGS, ...(parsed.settings ?? {}) });
         } else {
@@ -481,14 +687,11 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
       const trimmed = handleOrEmail.trim();
       if (!trimmed) return;
 
-      const normalized =
-        provider === "instagram"
-          ? trimmed.startsWith("@")
-            ? trimmed.toLowerCase()
-            : `@${trimmed.toLowerCase()}`
-          : trimmed.toLowerCase();
+      if ((provider === "gmail" || provider === "outlook") && !trimmed.includes("@")) {
+        return;
+      }
 
-      if (provider !== "instagram" && !normalized.includes("@")) return;
+      const normalized = normalizeIdentifier(provider, trimmed);
 
       setAccounts((prev) => {
         if (
@@ -500,13 +703,11 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
           id: uid(),
           provider,
           emailAddress: normalized,
-          displayName:
-            provider === "instagram"
-              ? normalized.replace(/^@/, "")
-              : normalized.split("@")[0]!,
+          displayName: deriveDisplayName(provider, normalized),
           status: "connected",
           lastSyncAt: Date.now(),
           createdAt: Date.now(),
+          notificationsEnabled: true,
           instagramKind:
             provider === "instagram" ? extras?.instagramKind ?? "creator" : undefined,
         };
@@ -529,6 +730,16 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
     );
   }, []);
 
+  const toggleAccountNotifications = useCallback((accountId: string) => {
+    setAccounts((prev) =>
+      prev.map((a) =>
+        a.id === accountId
+          ? { ...a, notificationsEnabled: !a.notificationsEnabled }
+          : a,
+      ),
+    );
+  }, []);
+
   const simulateIncoming = useCallback(
     (
       provider: Provider,
@@ -538,18 +749,36 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
       const candidates = accounts.filter(
         (a) => a.provider === provider && a.status === "connected",
       );
-      if (candidates.length === 0) return null;
-      const account = accountId
-        ? candidates.find((a) => a.id === accountId) ?? candidates[0]!
-        : candidates[Math.floor(Math.random() * candidates.length)]!;
-      const notif =
-        provider === "instagram"
-          ? buildInstagramNotification(account, instagramEventKind)
-          : buildEmailNotification(account);
+      // If no real account exists for this provider, mint a synthetic demo
+      // account so the simulate buttons still work for every provider.
+      const account: ConnectedAccount =
+        candidates.length === 0
+          ? buildDemoAccount(provider)
+          : accountId
+            ? candidates.find((a) => a.id === accountId) ?? candidates[0]!
+            : candidates[Math.floor(Math.random() * candidates.length)]!;
+
+      let notif: EmailNotification;
+      if (provider === "instagram") {
+        notif = buildInstagramNotification(account, instagramEventKind);
+      } else if (
+        provider === "linkedin" ||
+        provider === "facebook" ||
+        provider === "telegram" ||
+        provider === "whatsapp" ||
+        provider === "tiktok"
+      ) {
+        notif = buildSocialNotification(account);
+      } else {
+        notif = buildEmailNotification(account);
+      }
+
       setNotifications((prev) => [notif, ...prev]);
-      setAccounts((prev) =>
-        prev.map((a) => (a.id === account.id ? { ...a, lastSyncAt: Date.now() } : a)),
-      );
+      if (candidates.length > 0) {
+        setAccounts((prev) =>
+          prev.map((a) => (a.id === account.id ? { ...a, lastSyncAt: Date.now() } : a)),
+        );
+      }
       return notif;
     },
     [accounts],
@@ -592,7 +821,7 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
   }, [notifications]);
 
   const unseenByProvider = useMemo<Record<Provider, number>>(() => {
-    const m: Record<Provider, number> = { gmail: 0, outlook: 0, instagram: 0 };
+    const m = defaultEmptyByProvider();
     for (const n of notifications) {
       if (!n.isSeen) m[n.provider] += 1;
     }
@@ -604,7 +833,10 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
     [notifications],
   );
 
-  const instagramConfigured = false;
+  const fullyConfiguredProviders: Provider[] = ["gmail", "outlook"];
+  // Reference PROVIDER_ORDER so it is treated as used in environments that
+  // tree-shake unused exports.
+  void PROVIDER_ORDER;
 
   const value: InboxContextValue = {
     ready,
@@ -614,10 +846,11 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
     unseenTotal,
     unseenByAccount,
     unseenByProvider,
-    instagramConfigured,
+    fullyConfiguredProviders,
     connectAccount,
     disconnectAccount,
     reconnectAccount,
+    toggleAccountNotifications,
     simulateIncoming,
     markSeen,
     markAllSeen,

@@ -19,16 +19,9 @@ import { ScanSkeleton } from "@/components/ScanSkeleton";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { useInbox } from "@/context/InboxContext";
 import { useColors } from "@/hooks/useColors";
+import { PROVIDER_LABELS, PROVIDER_ORDER, type Provider } from "@/types";
 
-type Filter = "all" | "unread" | "gmail" | "outlook" | "instagram";
-
-const FILTERS: { id: Filter; label: string }[] = [
-  { id: "all", label: "All" },
-  { id: "unread", label: "Unread" },
-  { id: "gmail", label: "Gmail" },
-  { id: "outlook", label: "Outlook" },
-  { id: "instagram", label: "Instagram" },
-];
+type Filter = "all" | "unread" | Provider;
 
 export default function NotificationsScreen() {
   const colors = useColors();
@@ -43,17 +36,22 @@ export default function NotificationsScreen() {
     return () => clearTimeout(t);
   }, []);
 
+  const filters: { id: Filter; label: string }[] = useMemo(
+    () => [
+      { id: "all", label: "All" },
+      { id: "unread", label: "Unread" },
+      ...PROVIDER_ORDER.map((p) => ({
+        id: p as Filter,
+        label: PROVIDER_LABELS[p],
+      })),
+    ],
+    [],
+  );
+
   const filtered = useMemo(() => {
-    switch (filter) {
-      case "unread":
-        return notifications.filter((n) => !n.isSeen);
-      case "gmail":
-      case "outlook":
-      case "instagram":
-        return notifications.filter((n) => n.provider === filter);
-      default:
-        return notifications;
-    }
+    if (filter === "all") return notifications;
+    if (filter === "unread") return notifications.filter((n) => !n.isSeen);
+    return notifications.filter((n) => n.provider === filter);
   }, [filter, notifications]);
 
   const bottomPad = (Platform.OS === "web" ? 100 : insets.bottom + 80) + 24;
@@ -101,13 +99,13 @@ export default function NotificationsScreen() {
       >
         <RadarSpinner
           size={18}
-          color={colors.softCyan}
+          color={colors.radarBlue}
           reducedMotion={settings.reducedMotion}
         />
         <Text style={[styles.scanText, { color: colors.coolGrey }]}>
           {unseenTotal > 0 ? "Scanning new signals..." : "Live scan active"}
         </Text>
-        <View style={[styles.liveDot, { backgroundColor: colors.softCyan }]} />
+        <View style={[styles.liveDot, { backgroundColor: colors.radarBlue }]} />
       </View>
 
       <ScrollView
@@ -115,7 +113,7 @@ export default function NotificationsScreen() {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.filtersRow}
       >
-        {FILTERS.map((f) => {
+        {filters.map((f) => {
           const active = filter === f.id;
           return (
             <Pressable
@@ -133,7 +131,9 @@ export default function NotificationsScreen() {
               <Text
                 style={[
                   styles.chipText,
-                  { color: active ? colors.brandNavy : colors.foreground },
+                  {
+                    color: active ? colors.primaryForeground : colors.foreground,
+                  },
                 ]}
               >
                 {f.label}
@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    shadowColor: "#56CCF2",
+    shadowColor: "#2F80ED",
     shadowOpacity: 0.9,
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 0 },

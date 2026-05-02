@@ -6,7 +6,12 @@ import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { ProviderIcon } from "@/components/ProviderIcon";
 import { getInstagramEventLabel } from "@/context/InboxContext";
 import { useColors } from "@/hooks/useColors";
-import type { EmailNotification, InstagramEventKind } from "@/types";
+import {
+  PROVIDER_LABELS,
+  type EmailNotification,
+  type InstagramEventKind,
+  type Provider,
+} from "@/types";
 import { formatRelativeTime } from "@/utils/format";
 
 interface NotificationCardProps {
@@ -22,6 +27,30 @@ const INSTAGRAM_ICONS: Record<InstagramEventKind, keyof typeof Feather.glyphMap>
   system: "shield",
 };
 
+function getProviderTagColor(
+  provider: Provider,
+  colors: ReturnType<typeof useColors>,
+): string {
+  switch (provider) {
+    case "gmail":
+      return colors.gmail;
+    case "outlook":
+      return colors.outlook;
+    case "instagram":
+      return colors.instagram;
+    case "linkedin":
+      return colors.linkedin;
+    case "facebook":
+      return colors.facebook;
+    case "telegram":
+      return colors.telegram;
+    case "whatsapp":
+      return colors.whatsapp;
+    case "tiktok":
+      return colors.tiktok;
+  }
+}
+
 export function NotificationCard({ item, onPress }: NotificationCardProps) {
   const colors = useColors();
 
@@ -34,6 +63,7 @@ export function NotificationCard({ item, onPress }: NotificationCardProps) {
 
   const isInstagram = item.provider === "instagram";
   const eventKind = item.instagramEventKind;
+  const providerColor = getProviderTagColor(item.provider, colors);
 
   return (
     <Pressable
@@ -83,8 +113,21 @@ export function NotificationCard({ item, onPress }: NotificationCardProps) {
             </Text>
           </View>
 
-          {isInstagram && eventKind ? (
-            <View style={styles.tagRow}>
+          <View style={styles.tagRow}>
+            <View
+              style={[
+                styles.providerTag,
+                { backgroundColor: providerColor + "1F" },
+              ]}
+            >
+              <View
+                style={[styles.providerDot, { backgroundColor: providerColor }]}
+              />
+              <Text style={[styles.providerTagText, { color: providerColor }]}>
+                {PROVIDER_LABELS[item.provider]}
+              </Text>
+            </View>
+            {isInstagram && eventKind ? (
               <View
                 style={[
                   styles.tag,
@@ -100,11 +143,8 @@ export function NotificationCard({ item, onPress }: NotificationCardProps) {
                   {getInstagramEventLabel(eventKind)}
                 </Text>
               </View>
-              <Text style={[styles.handle, { color: colors.mutedForeground }]}>
-                {item.senderEmail}
-              </Text>
-            </View>
-          ) : null}
+            ) : null}
+          </View>
 
           <Text
             numberOfLines={1}
@@ -147,7 +187,9 @@ export function NotificationCard({ item, onPress }: NotificationCardProps) {
           ) : null}
 
           <Text style={[styles.account, { color: colors.mutedForeground }]} numberOfLines={1}>
-            {isInstagram ? `via ${item.emailAddress}` : item.emailAddress}
+            {isInstagram || item.provider === "linkedin" || item.provider === "telegram" || item.provider === "tiktok"
+              ? `via ${item.emailAddress}`
+              : item.emailAddress}
           </Text>
         </View>
       </View>
@@ -160,6 +202,11 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     padding: 14,
     marginBottom: 10,
+    shadowColor: "#0B1020",
+    shadowOpacity: 0.04,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 1,
   },
   row: {
     flexDirection: "row",
@@ -185,7 +232,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 2,
+    marginBottom: 4,
   },
   sender: {
     fontSize: 15,
@@ -199,8 +246,28 @@ const styles = StyleSheet.create({
   tagRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 6,
     marginBottom: 6,
+    flexWrap: "wrap",
+  },
+  providerTag: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  providerDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  providerTagText: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 10,
+    letterSpacing: 0.4,
+    textTransform: "uppercase",
   },
   tag: {
     flexDirection: "row",
@@ -215,10 +282,6 @@ const styles = StyleSheet.create({
     fontSize: 10,
     letterSpacing: 0.4,
     textTransform: "uppercase",
-  },
-  handle: {
-    fontFamily: "Inter_500Medium",
-    fontSize: 11,
   },
   subject: {
     fontSize: 14,
