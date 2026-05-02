@@ -1,0 +1,104 @@
+Fix the UI/UX issues in the current YourRadar mobile screens.
+
+Do not rebuild the app from scratch. Only fix the current UI.
+
+1. Remove or hide “Simulate signal” from the main dashboard
+
+The “Simulate signal” section is only for testing. It should not appear in the normal user dashboard.
+
+Change it as follows:
+- Hide “Simulate signal” by default in production/normal mode.
+- Move all mock/simulate notification buttons to Settings > Developer / Test Mode.
+- Add a toggle called “Enable test mode” in Settings.
+- Only show simulation buttons when test mode is enabled.
+- The main dashboard should feel like a real user app, not a demo/testing page.
+
+2. Dashboard layout cleanup
+
+On the My Radar dashboard:
+- Keep the logo and “My Radar” heading.
+- Keep the Active Signals radar card.
+- Keep connected source cards.
+- Remove test/demo UI from the main dashboard.
+- Make the dashboard more polished and less crowded.
+- Make sure all horizontal carousels have proper padding and do not cut content.
+- Make sure nothing overflows outside the phone screen width.
+
+3. Fix Alerts page horizontal overflow
+
+The Alerts page currently has serious mobile UI issues:
+- Filter tabs overflow horizontally.
+- The Instagram tab is cut off.
+- Alert cards are too wide and touch the screen edges.
+- Some elements are clipped.
+- Bottom content is hidden behind the bottom navigation.
+
+Fix this properly.
+
+Requirements:
+- The whole Alerts screen must fit inside mobile width.
+- No horizontal overflow anywhere.
+- Add proper left/right padding, around 16px to 20px.
+- Filter tabs should be horizontally scrollable with smooth scrolling.
+- Filter tabs should not be clipped.
+- Add padding-right at the end of the filter row so the last tab is fully visible.
+- Alert cards should use width: 100% within the padded container.
+- Alert cards should not exceed the viewport width.
+- Use box-sizing: border-box globally.
+- Add enough bottom padding so the last alert card is not hidden behind the bottom nav.
+
+4. Alerts page card design improvements
+
+Improve each alert card:
+- Reduce overly large borders.
+- Use a cleaner card style with subtle shadow.
+- Keep blue border only for unread/new alerts, but make it less aggressive.
+- Read/seen alerts should use a light grey border.
+- Provider badges should be smaller and cleaner.
+- Event badges like “DIRECT MESSAGE” and “COMMENT” should be compact.
+- Keep unread red dot, but align it cleanly.
+- Make sender/source title, time, provider badge, subject, snippet, and account line visually balanced.
+- Avoid too much text wrapping in the badges.
+
+5. Alerts header improvements
+
+The Alerts page header should remain clear:
+- Title: Alerts
+- Subtitle: “3 new signals”
+- Mark all button should be smaller and aligned properly.
+- “Scanning new signals...” pill should fit inside the screen and not look oversized.
+- Make the scanning pill width responsive.
+- Use a small radar animated icon inside the scanning pill.
+
+6. Bottom navigation fix
+
+The bottom navigation currently overlaps content.
+
+Fix:
+- Add safe-area support for iPhone.
+- Use padding-bottom: env(safe-area-inset-bottom).
+- Add page content bottom padding of at least 96px.
+- Make sure the selected nav item does not create a large blue rectangle that looks broken.
+- Selected nav item should be elegant: icon/text in blue, optional small top indicator, not a huge bordered box.
+
+7. Provider filters visibility rule
+
+In Alerts filters:
+- Show only connected providers.
+- Always show “All” and “Unread”.
+- If Instagram is connected, show Instagram.
+- If Gmail is connected, show Gmail.
+- If Outlook is connected, show Outlook.
+- Do not show providers that are not connected.
+
+8. Mobile responsiveness acceptance criteria
+
+This update is complete when:
+- “Simulate signal” no longer appears on the main dashboard in normal mode.
+- Test notification buttons are moved to Settings > Developer / Test Mode.
+- Alerts page has no horizontal overflow.
+- Filter tabs are scrollable and fully visible.
+- Alert cards fit perfectly within the mobile screen.
+- Bottom navigation does not cover the last alert.
+- Selected bottom nav item looks clean and modern.
+- The app looks like a real production app, not a test prototype.
