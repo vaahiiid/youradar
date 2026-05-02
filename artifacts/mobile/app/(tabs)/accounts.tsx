@@ -25,21 +25,22 @@ export default function AccountsScreen() {
   const {
     accounts,
     unseenByAccount,
+    instagramConfigured,
     connectAccount,
     disconnectAccount,
     reconnectAccount,
   } = useInbox();
   const [sheetProvider, setSheetProvider] = useState<Provider | null>(null);
 
-  const confirmDisconnect = (id: string, email: string) => {
+  const confirmDisconnect = (id: string, label: string) => {
     if (Platform.OS === "web") {
-      const ok = typeof window !== "undefined" && window.confirm(`Disconnect ${email}?`);
+      const ok = typeof window !== "undefined" && window.confirm(`Disconnect ${label}?`);
       if (ok) disconnectAccount(id);
       return;
     }
     Alert.alert(
-      "Disconnect account",
-      `Stop receiving notifications from ${email}?`,
+      "Disconnect source",
+      `Stop receiving signals from ${label}?`,
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -56,48 +57,69 @@ export default function AccountsScreen() {
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       <ScreenHeader
-        title="Accounts"
-        subtitle="Connect as many inboxes as you like"
+        title="Sources"
+        subtitle="Email, social, and more — unified"
       />
 
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingBottom: bottomPad }]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.connectRow}>
-          <Pressable
+        <View style={styles.connectGrid}>
+          <ConnectButton
+            provider="gmail"
+            label="Gmail"
+            color={colors.gmail}
             onPress={() => setSheetProvider("gmail")}
-            style={({ pressed }) => [
-              styles.connectBtn,
-              {
-                backgroundColor: colors.gmail,
-                opacity: pressed ? 0.9 : 1,
-              },
-            ]}
-          >
-            <Feather name="plus" size={18} color="#FFFFFF" />
-            <Text style={styles.connectBtnText}>Connect Gmail</Text>
-          </Pressable>
-          <Pressable
+          />
+          <ConnectButton
+            provider="outlook"
+            label="Outlook"
+            color={colors.outlook}
             onPress={() => setSheetProvider("outlook")}
-            style={({ pressed }) => [
-              styles.connectBtn,
+          />
+          <ConnectButton
+            provider="instagram"
+            label="Instagram"
+            color={colors.instagram}
+            onPress={() => setSheetProvider("instagram")}
+            full
+          />
+        </View>
+
+        {!instagramConfigured ? (
+          <View
+            style={[
+              styles.warnCard,
               {
-                backgroundColor: colors.outlook,
-                opacity: pressed ? 0.9 : 1,
+                backgroundColor: "rgba(245, 165, 36, 0.10)",
+                borderColor: "rgba(245, 165, 36, 0.45)",
               },
             ]}
           >
-            <Feather name="plus" size={18} color="#FFFFFF" />
-            <Text style={styles.connectBtnText}>Connect Outlook</Text>
-          </Pressable>
-        </View>
+            <View style={styles.warnHeader}>
+              <Feather name="alert-triangle" size={16} color={colors.warning} />
+              <Text style={[styles.warnTitle, { color: colors.warning }]}>
+                Instagram is in preview mode
+              </Text>
+            </View>
+            <Text style={[styles.warnBody, { color: colors.coolGrey }]}>
+              Instagram integration is not fully configured yet. Connect a
+              professional Instagram account and complete Meta app setup to
+              receive supported Instagram events.
+            </Text>
+            <Text style={[styles.warnBody, { color: colors.coolGrey, marginTop: 6 }]}>
+              Personal Instagram app notifications cannot be imported directly
+              unless supported by official APIs.
+            </Text>
+          </View>
+        ) : null}
 
         {accounts.length === 0 ? (
           <EmptyState
-            icon="mail"
-            title="No inboxes yet"
-            message="Connect a Gmail or Outlook account to start receiving unified notifications."
+            icon="users"
+            title="No sources yet"
+            message="Connect Gmail, Outlook, or Instagram to start receiving unified signals."
           />
         ) : (
           accounts.map((account) => (
@@ -121,7 +143,7 @@ export default function AccountsScreen() {
                       <Feather
                         name="refresh-cw"
                         size={16}
-                        color={colors.primary}
+                        color={colors.radarGreen}
                       />
                     </Pressable>
                   ) : null}
@@ -159,16 +181,17 @@ export default function AccountsScreen() {
             <View
               style={[styles.infoIcon, { backgroundColor: colors.secondary }]}
             >
-              <Feather name="lock" size={16} color={colors.primary} />
+              <Feather name="lock" size={16} color={colors.radarGreen} />
             </View>
             <Text style={[styles.infoTitle, { color: colors.foreground }]}>
               How connections work
             </Text>
           </View>
-          <Text style={[styles.infoBody, { color: colors.mutedForeground }]}>
-            Inbox Pulse never stores your password. Real connections use Google
-            and Microsoft OAuth — tokens stay on the server, refresh
-            automatically, and never reach this device.
+          <Text style={[styles.infoBody, { color: colors.coolGrey }]}>
+            YourRadar never stores your password. Real connections use Google
+            and Microsoft OAuth for email, and official Meta APIs for Instagram —
+            tokens stay on the server, refresh automatically, and never reach
+            this device.
           </Text>
         </View>
       </ScrollView>
@@ -177,22 +200,54 @@ export default function AccountsScreen() {
         visible={sheetProvider !== null}
         provider={sheetProvider}
         onClose={() => setSheetProvider(null)}
-        onConnect={(p, email) => connectAccount(p, email)}
+        onConnect={(p, value, extras) => connectAccount(p, value, extras)}
       />
     </View>
+  );
+}
+
+function ConnectButton({
+  provider: _provider,
+  label,
+  color,
+  onPress,
+  full,
+}: {
+  provider: Provider;
+  label: string;
+  color: string;
+  onPress: () => void;
+  full?: boolean;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.connectBtn,
+        {
+          backgroundColor: color,
+          opacity: pressed ? 0.9 : 1,
+          flexBasis: full ? "100%" : "48%",
+        },
+      ]}
+    >
+      <Feather name="plus" size={18} color="#FFFFFF" />
+      <Text style={styles.connectBtnText}>Connect {label}</Text>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
   scroll: { paddingHorizontal: 20 },
-  connectRow: {
+  connectGrid: {
     flexDirection: "row",
+    flexWrap: "wrap",
     gap: 10,
-    marginBottom: 18,
+    marginBottom: 16,
   },
   connectBtn: {
-    flex: 1,
+    flexGrow: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -204,6 +259,27 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontFamily: "Inter_700Bold",
     fontSize: 14,
+  },
+  warnCard: {
+    padding: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginBottom: 16,
+  },
+  warnHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 6,
+  },
+  warnTitle: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 13,
+  },
+  warnBody: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 12,
+    lineHeight: 17,
   },
   rowActions: {
     flexDirection: "row",

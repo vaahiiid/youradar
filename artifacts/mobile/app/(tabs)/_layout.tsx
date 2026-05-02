@@ -1,11 +1,16 @@
+import { Feather } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { isLiquidGlassAvailable } from "expo-glass-effect";
 import { Tabs } from "expo-router";
-import { Badge as NTBadge, Icon, Label, NativeTabs } from "expo-router/unstable-native-tabs";
+import {
+  Badge as NTBadge,
+  Icon,
+  Label,
+  NativeTabs,
+} from "expo-router/unstable-native-tabs";
 import { SymbolView } from "expo-symbols";
-import { Feather } from "@expo/vector-icons";
 import React from "react";
-import { Platform, StyleSheet, View, useColorScheme } from "react-native";
+import { Platform, StyleSheet, View } from "react-native";
 
 import { Badge } from "@/components/Badge";
 import { useInbox } from "@/context/InboxContext";
@@ -16,8 +21,8 @@ function NativeTabLayout() {
   return (
     <NativeTabs>
       <NativeTabs.Trigger name="index">
-        <Icon sf={{ default: "house", selected: "house.fill" }} />
-        <Label>Inbox</Label>
+        <Icon sf={{ default: "dot.radiowaves.left.and.right", selected: "dot.radiowaves.left.and.right" }} />
+        <Label>Radar</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="notifications">
         <Icon sf={{ default: "bell", selected: "bell.fill" }} />
@@ -27,8 +32,8 @@ function NativeTabLayout() {
         ) : null}
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="accounts">
-        <Icon sf={{ default: "envelope", selected: "envelope.fill" }} />
-        <Label>Accounts</Label>
+        <Icon sf={{ default: "person.2", selected: "person.2.fill" }} />
+        <Label>Sources</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="settings">
         <Icon sf={{ default: "gearshape", selected: "gearshape.fill" }} />
@@ -40,8 +45,6 @@ function NativeTabLayout() {
 
 function ClassicTabLayout() {
   const colors = useColors();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
   const isIOS = Platform.OS === "ios";
   const isWeb = Platform.OS === "web";
   const { unseenTotal } = useInbox();
@@ -49,16 +52,17 @@ function ClassicTabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.mutedForeground,
+        tabBarActiveTintColor: colors.radarGreen,
+        tabBarInactiveTintColor: colors.coolGrey,
         headerShown: false,
+        sceneStyle: { backgroundColor: colors.background },
         tabBarLabelStyle: {
           fontFamily: "Inter_600SemiBold",
           fontSize: 11,
         },
         tabBarStyle: {
           position: "absolute",
-          backgroundColor: isIOS ? "transparent" : colors.background,
+          backgroundColor: isIOS ? "transparent" : colors.brandNavy,
           borderTopWidth: isWeb ? 1 : 0.5,
           borderTopColor: colors.border,
           elevation: 0,
@@ -68,28 +72,32 @@ function ClassicTabLayout() {
           isIOS ? (
             <BlurView
               intensity={100}
-              tint={isDark ? "dark" : "light"}
+              tint="dark"
               style={StyleSheet.absoluteFill}
             />
-          ) : isWeb ? (
+          ) : (
             <View
               style={[
                 StyleSheet.absoluteFill,
-                { backgroundColor: colors.background },
+                { backgroundColor: colors.brandNavy },
               ]}
             />
-          ) : null,
+          ),
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: "Inbox",
+          title: "Radar",
           tabBarIcon: ({ color }) =>
             isIOS ? (
-              <SymbolView name="house" tintColor={color} size={24} />
+              <SymbolView
+                name="dot.radiowaves.left.and.right"
+                tintColor={color}
+                size={24}
+              />
             ) : (
-              <Feather name="home" size={22} color={color} />
+              <Feather name="radio" size={22} color={color} />
             ),
         }}
       />
@@ -118,12 +126,12 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="accounts"
         options={{
-          title: "Accounts",
+          title: "Sources",
           tabBarIcon: ({ color }) =>
             isIOS ? (
-              <SymbolView name="envelope" tintColor={color} size={24} />
+              <SymbolView name="person.2" tintColor={color} size={24} />
             ) : (
-              <Feather name="mail" size={22} color={color} />
+              <Feather name="users" size={22} color={color} />
             ),
         }}
       />

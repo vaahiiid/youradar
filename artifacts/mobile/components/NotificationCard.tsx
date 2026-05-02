@@ -1,16 +1,26 @@
+import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import React from "react";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { ProviderIcon } from "@/components/ProviderIcon";
+import { getInstagramEventLabel } from "@/context/InboxContext";
 import { useColors } from "@/hooks/useColors";
-import type { EmailNotification } from "@/types";
+import type { EmailNotification, InstagramEventKind } from "@/types";
 import { formatRelativeTime } from "@/utils/format";
 
 interface NotificationCardProps {
   item: EmailNotification;
   onPress: () => void;
 }
+
+const INSTAGRAM_ICONS: Record<InstagramEventKind, keyof typeof Feather.glyphMap> = {
+  dm: "send",
+  comment: "message-circle",
+  mention: "at-sign",
+  insight: "trending-up",
+  system: "shield",
+};
 
 export function NotificationCard({ item, onPress }: NotificationCardProps) {
   const colors = useColors();
@@ -22,6 +32,9 @@ export function NotificationCard({ item, onPress }: NotificationCardProps) {
     onPress();
   };
 
+  const isInstagram = item.provider === "instagram";
+  const eventKind = item.instagramEventKind;
+
   return (
     <Pressable
       onPress={handlePress}
@@ -29,7 +42,7 @@ export function NotificationCard({ item, onPress }: NotificationCardProps) {
         styles.card,
         {
           backgroundColor: colors.card,
-          borderColor: item.isSeen ? colors.border : colors.primary,
+          borderColor: item.isSeen ? colors.border : colors.radarGreen,
           borderWidth: item.isSeen ? 1 : 1.5,
           opacity: pressed ? 0.85 : 1,
         },
@@ -70,6 +83,29 @@ export function NotificationCard({ item, onPress }: NotificationCardProps) {
             </Text>
           </View>
 
+          {isInstagram && eventKind ? (
+            <View style={styles.tagRow}>
+              <View
+                style={[
+                  styles.tag,
+                  { backgroundColor: "rgba(225, 48, 108, 0.16)" },
+                ]}
+              >
+                <Feather
+                  name={INSTAGRAM_ICONS[eventKind]}
+                  size={10}
+                  color={colors.instagram}
+                />
+                <Text style={[styles.tagText, { color: colors.instagram }]}>
+                  {getInstagramEventLabel(eventKind)}
+                </Text>
+              </View>
+              <Text style={[styles.handle, { color: colors.mutedForeground }]}>
+                {item.senderEmail}
+              </Text>
+            </View>
+          ) : null}
+
           <Text
             numberOfLines={1}
             style={[
@@ -90,8 +126,28 @@ export function NotificationCard({ item, onPress }: NotificationCardProps) {
             {item.snippet}
           </Text>
 
+          {item.mediaCaption ? (
+            <View
+              style={[
+                styles.mediaPreview,
+                {
+                  backgroundColor: colors.secondary,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              <Feather name="image" size={12} color={colors.mutedForeground} />
+              <Text
+                numberOfLines={1}
+                style={[styles.mediaCaption, { color: colors.mutedForeground }]}
+              >
+                {item.mediaCaption}
+              </Text>
+            </View>
+          ) : null}
+
           <Text style={[styles.account, { color: colors.mutedForeground }]} numberOfLines={1}>
-            {item.emailAddress}
+            {isInstagram ? `via ${item.emailAddress}` : item.emailAddress}
           </Text>
         </View>
       </View>
@@ -140,6 +196,30 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: "Inter_500Medium",
   },
+  tagRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 6,
+  },
+  tag: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  tagText: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 10,
+    letterSpacing: 0.4,
+    textTransform: "uppercase",
+  },
+  handle: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 11,
+  },
   subject: {
     fontSize: 14,
     marginBottom: 4,
@@ -149,6 +229,21 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     lineHeight: 18,
     marginBottom: 8,
+  },
+  mediaPreview: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginBottom: 8,
+  },
+  mediaCaption: {
+    flex: 1,
+    fontFamily: "Inter_500Medium",
+    fontSize: 11,
   },
   account: {
     fontSize: 11,

@@ -2,21 +2,40 @@ import React from "react";
 import { Platform, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { BrandLogo } from "@/components/BrandLogo";
+import { RadarPulse } from "@/components/RadarPulse";
 import { useColors } from "@/hooks/useColors";
 
 interface ScreenHeaderProps {
   title: string;
   subtitle?: string;
   right?: React.ReactNode;
+  showBrand?: boolean;
 }
 
-export function ScreenHeader({ title, subtitle, right }: ScreenHeaderProps) {
+export function ScreenHeader({
+  title,
+  subtitle,
+  right,
+  showBrand,
+}: ScreenHeaderProps) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const topInset = Platform.OS === "web" ? Math.max(insets.top, 67) : insets.top;
 
   return (
     <View style={[styles.container, { paddingTop: topInset + 8 }]}>
+      {showBrand ? (
+        <View style={styles.brandRow}>
+          <View style={styles.brandLeft}>
+            <View style={styles.miniRadar}>
+              <RadarPulse size={26} rings={2} showSweep={false} />
+            </View>
+            <BrandLogo height={20} tintColor={colors.offWhite} />
+          </View>
+          {right}
+        </View>
+      ) : null}
       <View style={styles.row}>
         <View style={{ flex: 1 }}>
           <Text style={[styles.title, { color: colors.foreground }]}>
@@ -28,7 +47,7 @@ export function ScreenHeader({ title, subtitle, right }: ScreenHeaderProps) {
             </Text>
           ) : null}
         </View>
-        {right}
+        {!showBrand ? right : null}
       </View>
     </View>
   );
@@ -38,6 +57,21 @@ const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 20,
     paddingBottom: 12,
+  },
+  brandRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 14,
+  },
+  brandLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  miniRadar: {
+    width: 26,
+    height: 26,
   },
   row: {
     flexDirection: "row",

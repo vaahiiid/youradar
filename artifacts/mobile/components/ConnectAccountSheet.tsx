@@ -13,14 +13,24 @@ import {
 
 import { ProviderIcon } from "@/components/ProviderIcon";
 import { useColors } from "@/hooks/useColors";
-import type { Provider } from "@/types";
+import type { ConnectedAccount, Provider } from "@/types";
 
 interface ConnectAccountSheetProps {
   visible: boolean;
   provider: Provider | null;
   onClose: () => void;
-  onConnect: (provider: Provider, email: string) => void;
+  onConnect: (
+    provider: Provider,
+    handleOrEmail: string,
+    extras?: { instagramKind?: ConnectedAccount["instagramKind"] },
+  ) => void;
 }
+
+const KIND_OPTIONS: { id: ConnectedAccount["instagramKind"]; label: string }[] = [
+  { id: "creator", label: "Creator" },
+  { id: "business", label: "Business" },
+  { id: "professional", label: "Professional" },
+];
 
 export function ConnectAccountSheet({
   visible,
@@ -29,22 +39,44 @@ export function ConnectAccountSheet({
   onConnect,
 }: ConnectAccountSheetProps) {
   const colors = useColors();
-  const [email, setEmail] = useState("");
+  const [value, setValue] = useState("");
+  const [kind, setKind] =
+    useState<ConnectedAccount["instagramKind"]>("creator");
+
+  const reset = () => {
+    setValue("");
+    setKind("creator");
+  };
 
   const handleClose = () => {
-    setEmail("");
+    reset();
     onClose();
   };
 
+  const isInstagram = provider === "instagram";
+
+  const isValid = isInstagram
+    ? value.trim().length >= 2
+    : value.trim().includes("@");
+
   const handleConnect = () => {
-    if (!provider || !email.trim().includes("@")) return;
-    onConnect(provider, email.trim());
-    setEmail("");
+    if (!provider || !isValid) return;
+    onConnect(
+      provider,
+      value.trim(),
+      isInstagram ? { instagramKind: kind } : undefined,
+    );
+    reset();
     onClose();
   };
 
   if (!provider) return null;
-  const providerName = provider === "gmail" ? "Gmail" : "Outlook";
+  const providerName =
+    provider === "gmail"
+      ? "Gmail"
+      : provider === "outlook"
+        ? "Outlook"
+        : "Instagram";
 
   return (
     <Modal
@@ -81,7 +113,9 @@ export function ConnectAccountSheet({
                 <Text
                   style={[styles.subtitle, { color: colors.mutedForeground }]}
                 >
-                  Add another inbox to your unified feed
+                  {isInstagram
+                    ? "Track DMs, comments, mentions, and insights"
+                    : "Add another inbox to your unified feed"}
                 </Text>
               </View>
             </View>
@@ -92,26 +126,31 @@ export function ConnectAccountSheet({
                 { backgroundColor: colors.secondary, borderColor: colors.border },
               ]}
             >
-              <Feather name="shield" size={14} color={colors.primary} />
+              <Feather name="shield" size={14} color={colors.radarGreen} />
               <Text style={[styles.noteText, { color: colors.secondaryForeground }]}>
-                In production this opens secure OAuth. For preview, enter the
-                inbox address you'd like to track.
+                {isInstagram
+                  ? "Instagram monitoring works through official Meta APIs and may require a professional Instagram account and Meta app permissions. In production this opens secure Meta OAuth."
+                  : "In production this opens secure OAuth. For preview, enter the inbox address you'd like to track."}
               </Text>
             </View>
 
             <Text style={[styles.label, { color: colors.mutedForeground }]}>
-              Email address
+              {isInstagram ? "Instagram handle" : "Email address"}
             </Text>
             <TextInput
-              value={email}
-              onChangeText={setEmail}
+              value={value}
+              onChangeText={setValue}
               placeholder={
-                provider === "gmail" ? "you@gmail.com" : "you@outlook.com"
+                isInstagram
+                  ? "@yourhandle"
+                  : provider === "gmail"
+                    ? "you@gmail.com"
+                    : "you@outlook.com"
               }
               placeholderTextColor={colors.mutedForeground}
               autoCapitalize="none"
               autoCorrect={false}
-              keyboardType="email-address"
+              keyboardType={isInstagram ? "default" : "email-address"}
               style={[
                 styles.input,
                 {
@@ -121,6 +160,46 @@ export function ConnectAccountSheet({
                 },
               ]}
             />
+
+            {isInstagram ? (
+              <>
+                <Text style={[styles.label, { color: colors.mutedForeground }]}>
+                  Account type
+                </Text>
+                <View style={styles.kindRow}>
+                  {KIND_OPTIONS.map((opt) => {
+                    const active = kind === opt.id;
+                    return (
+                      <Pressable
+                        key={opt.id}
+                        onPress={() => setKind(opt.id)}
+                        style={({ pressed }) => [
+                          styles.kindChip,
+                          {
+                            backgroundColor: active
+                              ? colors.radarGreen
+                              : colors.background,
+                            borderColor: active ? colors.radarGreen : colors.border,
+                            opacity: pressed ? 0.85 : 1,
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.kindChipText,
+                            {
+                              color: active ? colors.brandNavy : colors.foreground,
+                            },
+                          ]}
+                        >
+                          {opt.label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </>
+            ) : null}
 
             <View style={styles.buttonRow}>
               <Pressable
@@ -145,18 +224,18 @@ export function ConnectAccountSheet({
               </Pressable>
               <Pressable
                 onPress={handleConnect}
-                disabled={!email.includes("@")}
+                disabled={!isValid}
                 style={({ pressed }) => [
                   styles.button,
                   styles.primaryBtn,
                   {
-                    backgroundColor: colors.primary,
-                    opacity: !email.includes("@") ? 0.5 : pressed ? 0.85 : 1,
+                    backgroundColor: colors.radarGreen,
+                    opacity: !isValid ? 0.5 : pressed ? 0.85 : 1,
                   },
                 ]}
               >
                 <Text
-                  style={[styles.buttonText, { color: colors.primaryForeground }]}
+                  style={[styles.buttonText, { color: colors.brandNavy }]}
                 >
                   Connect
                 </Text>
@@ -172,7 +251,7 @@ export function ConnectAccountSheet({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.55)",
+    backgroundColor: "rgba(0,0,0,0.65)",
     justifyContent: "flex-end",
   },
   kbWrap: {
@@ -237,6 +316,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: "Inter_500Medium",
   },
+  kindRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  kindChip: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: "center",
+  },
+  kindChipText: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 13,
+  },
   buttonRow: {
     flexDirection: "row",
     gap: 10,
@@ -252,6 +346,6 @@ const styles = StyleSheet.create({
   primaryBtn: {},
   buttonText: {
     fontSize: 15,
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "Inter_700Bold",
   },
 });

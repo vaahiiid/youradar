@@ -14,6 +14,12 @@ interface AccountCardProps {
   rightSlot?: React.ReactNode;
 }
 
+const PROVIDER_LABELS: Record<ConnectedAccount["provider"], string> = {
+  gmail: "Gmail",
+  outlook: "Outlook",
+  instagram: "Instagram",
+};
+
 export function AccountCard({ account, unseen, rightSlot }: AccountCardProps) {
   const colors = useColors();
   const statusColor =
@@ -28,6 +34,12 @@ export function AccountCard({ account, unseen, rightSlot }: AccountCardProps) {
       : account.status === "needs_reauth"
         ? "Needs reauth"
         : "Disconnected";
+
+  const providerLabel = PROVIDER_LABELS[account.provider];
+  const subLabel =
+    account.provider === "instagram" && account.instagramKind
+      ? `${providerLabel} · ${capitalize(account.instagramKind)}`
+      : providerLabel;
 
   return (
     <View
@@ -50,15 +62,13 @@ export function AccountCard({ account, unseen, rightSlot }: AccountCardProps) {
           </View>
 
           <View style={styles.metaRow}>
-            <View
-              style={[styles.dot, { backgroundColor: statusColor }]}
-            />
+            <View style={[styles.dot, { backgroundColor: statusColor }]} />
             <Text style={[styles.meta, { color: colors.mutedForeground }]}>
               {statusLabel}
             </Text>
             <Feather name="circle" size={4} color={colors.mutedForeground} />
             <Text style={[styles.meta, { color: colors.mutedForeground }]}>
-              {account.provider === "gmail" ? "Gmail" : "Outlook"}
+              {subLabel}
             </Text>
             <Feather name="circle" size={4} color={colors.mutedForeground} />
             <Text style={[styles.meta, { color: colors.mutedForeground }]}>
@@ -71,6 +81,10 @@ export function AccountCard({ account, unseen, rightSlot }: AccountCardProps) {
       </View>
     </View>
   );
+}
+
+function capitalize(s: string) {
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 const styles = StyleSheet.create({

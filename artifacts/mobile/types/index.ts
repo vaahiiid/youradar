@@ -1,6 +1,8 @@
-export type Provider = "gmail" | "outlook";
+export type Provider = "gmail" | "outlook" | "instagram";
 
 export type AccountStatus = "connected" | "needs_reauth" | "disconnected";
+
+export type InstagramAccountKind = "business" | "creator" | "professional";
 
 export interface ConnectedAccount {
   id: string;
@@ -10,7 +12,15 @@ export interface ConnectedAccount {
   status: AccountStatus;
   lastSyncAt: number;
   createdAt: number;
+  instagramKind?: InstagramAccountKind;
 }
+
+export type InstagramEventKind =
+  | "dm"
+  | "comment"
+  | "mention"
+  | "insight"
+  | "system";
 
 export interface EmailNotification {
   id: string;
@@ -25,10 +35,15 @@ export interface EmailNotification {
   receivedAt: number;
   providerWebLink?: string;
   isSeen: boolean;
+
+  instagramEventKind?: InstagramEventKind;
+  mediaThumbnailUrl?: string;
+  mediaCaption?: string;
 }
 
 export interface SettingsState {
   pushEnabled: boolean;
   inAppToastsEnabled: boolean;
   soundsEnabled: boolean;
+  reducedMotion: boolean;
 }

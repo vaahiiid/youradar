@@ -13,6 +13,8 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { BrandLogo } from "@/components/BrandLogo";
+import { RadarPulse } from "@/components/RadarPulse";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { Toast } from "@/components/Toast";
 import { useInbox } from "@/context/InboxContext";
@@ -64,55 +66,52 @@ export default function SettingsScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="Settings" subtitle="Tune your notification feel" />
+      <ScreenHeader title="Settings" subtitle="Tune your radar" />
 
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingBottom: bottomPad }]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.statsRow}>
-          <Stat label="Inboxes" value={String(accountsCount)} />
-          <Stat label="Notifications" value={String(totalCount)} />
+          <Stat label="Sources" value={String(accountsCount)} />
+          <Stat label="Signals" value={String(totalCount)} />
         </View>
 
         <SectionTitle>Notifications</SectionTitle>
         <Group>
-          <Row
-            icon="bell"
-            title="Push notifications"
-            subtitle="Send alerts to this device"
-          >
+          <Row icon="bell" title="Push notifications" subtitle="Send alerts to this device">
             <Switch
               value={settings.pushEnabled}
               onValueChange={(v) => updateSettings({ pushEnabled: v })}
-              trackColor={{ true: colors.primary, false: colors.border }}
-              thumbColor="#FFFFFF"
+              trackColor={{ true: colors.radarGreen, false: colors.border }}
+              thumbColor={Platform.OS === "android" ? colors.brandNavy : "#FFFFFF"}
             />
           </Row>
           <Divider />
-          <Row
-            icon="message-square"
-            title="In-app toasts"
-            subtitle="Show banner when a new email arrives"
-          >
+          <Row icon="message-square" title="In-app toasts" subtitle="Show banner when a new signal arrives">
             <Switch
               value={settings.inAppToastsEnabled}
               onValueChange={(v) => updateSettings({ inAppToastsEnabled: v })}
-              trackColor={{ true: colors.primary, false: colors.border }}
-              thumbColor="#FFFFFF"
+              trackColor={{ true: colors.radarGreen, false: colors.border }}
+              thumbColor={Platform.OS === "android" ? colors.brandNavy : "#FFFFFF"}
             />
           </Row>
           <Divider />
-          <Row
-            icon="volume-2"
-            title="Sounds"
-            subtitle="Play a chime for new emails"
-          >
+          <Row icon="volume-2" title="Sounds" subtitle="Play a chime for new signals">
             <Switch
               value={settings.soundsEnabled}
               onValueChange={(v) => updateSettings({ soundsEnabled: v })}
-              trackColor={{ true: colors.primary, false: colors.border }}
-              thumbColor="#FFFFFF"
+              trackColor={{ true: colors.radarGreen, false: colors.border }}
+              thumbColor={Platform.OS === "android" ? colors.brandNavy : "#FFFFFF"}
+            />
+          </Row>
+          <Divider />
+          <Row icon="eye-off" title="Reduced motion" subtitle="Calm the radar animations">
+            <Switch
+              value={settings.reducedMotion}
+              onValueChange={(v) => updateSettings({ reducedMotion: v })}
+              trackColor={{ true: colors.radarGreen, false: colors.border }}
+              thumbColor={Platform.OS === "android" ? colors.brandNavy : "#FFFFFF"}
             />
           </Row>
         </Group>
@@ -121,19 +120,15 @@ export default function SettingsScreen() {
         <Group>
           <ActionRow
             icon="zap"
-            title="Send test notification"
-            subtitle={
-              accounts.length === 0
-                ? "Connect an inbox first"
-                : "Trigger a sample alert"
-            }
+            title="Send test signal"
+            subtitle={accounts.length === 0 ? "Connect a source first" : "Trigger a sample alert"}
             onPress={handleTestPush}
             disabled={accounts.length === 0}
           />
           <Divider />
           <ActionRow
             icon="trash-2"
-            title="Clear all notifications"
+            title="Clear all signals"
             subtitle="Remove every alert on this device"
             onPress={confirmClear}
             destructive
@@ -148,10 +143,20 @@ export default function SettingsScreen() {
           <InfoRow label="Build" value="MVP · Phase 1" />
         </Group>
 
-        <Text style={[styles.footer, { color: colors.mutedForeground }]}>
-          Inbox Pulse keeps every email signal in one place. Real-time delivery
-          via Gmail Pub/Sub and Microsoft Graph webhooks ships next.
-        </Text>
+        <View style={styles.brandFooter}>
+          <View style={styles.miniRadar}>
+            <RadarPulse
+              size={40}
+              rings={2}
+              showSweep={!settings.reducedMotion}
+              reducedMotion={settings.reducedMotion}
+            />
+          </View>
+          <BrandLogo height={18} tintColor={colors.coolGrey} />
+          <Text style={[styles.poweredBy, { color: colors.coolGrey }]}>
+            powered by you group
+          </Text>
+        </View>
       </ScrollView>
 
       <Toast
@@ -223,7 +228,7 @@ function Row({
   return (
     <View style={styles.row}>
       <View style={[styles.rowIcon, { backgroundColor: colors.secondary }]}>
-        <Feather name={icon} size={16} color={colors.primary} />
+        <Feather name={icon} size={16} color={colors.radarGreen} />
       </View>
       <View style={{ flex: 1 }}>
         <Text style={[styles.rowTitle, { color: colors.foreground }]}>{title}</Text>
@@ -268,7 +273,7 @@ function ActionRow({
           styles.rowIcon,
           {
             backgroundColor: destructive
-              ? "rgba(239, 68, 68, 0.12)"
+              ? "rgba(255, 59, 48, 0.14)"
               : colors.secondary,
           },
         ]}
@@ -276,7 +281,7 @@ function ActionRow({
         <Feather
           name={icon}
           size={16}
-          color={destructive ? colors.destructive : colors.primary}
+          color={destructive ? colors.destructive : colors.radarGreen}
         />
       </View>
       <View style={{ flex: 1 }}>
@@ -380,12 +385,21 @@ const styles = StyleSheet.create({
     height: StyleSheet.hairlineWidth,
     marginLeft: 60,
   },
-  footer: {
+  brandFooter: {
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 24,
+  },
+  miniRadar: {
+    width: 40,
+    height: 40,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  poweredBy: {
     fontFamily: "Inter_500Medium",
-    fontSize: 12,
-    lineHeight: 18,
-    textAlign: "center",
-    marginTop: 8,
-    paddingHorizontal: 8,
+    fontSize: 11,
+    letterSpacing: 1.2,
+    textTransform: "lowercase",
   },
 });

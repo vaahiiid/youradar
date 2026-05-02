@@ -5,6 +5,7 @@ import {
   FlatList,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -17,13 +18,14 @@ import { ScreenHeader } from "@/components/ScreenHeader";
 import { useInbox } from "@/context/InboxContext";
 import { useColors } from "@/hooks/useColors";
 
-type Filter = "all" | "unread" | "gmail" | "outlook";
+type Filter = "all" | "unread" | "gmail" | "outlook" | "instagram";
 
 const FILTERS: { id: Filter; label: string }[] = [
   { id: "all", label: "All" },
   { id: "unread", label: "Unread" },
   { id: "gmail", label: "Gmail" },
   { id: "outlook", label: "Outlook" },
+  { id: "instagram", label: "Instagram" },
 ];
 
 export default function NotificationsScreen() {
@@ -38,9 +40,9 @@ export default function NotificationsScreen() {
       case "unread":
         return notifications.filter((n) => !n.isSeen);
       case "gmail":
-        return notifications.filter((n) => n.provider === "gmail");
       case "outlook":
-        return notifications.filter((n) => n.provider === "outlook");
+      case "instagram":
+        return notifications.filter((n) => n.provider === filter);
       default:
         return notifications;
     }
@@ -54,7 +56,7 @@ export default function NotificationsScreen() {
         title="Alerts"
         subtitle={
           unseenTotal > 0
-            ? `${unseenTotal} new notification${unseenTotal === 1 ? "" : "s"}`
+            ? `${unseenTotal} new signal${unseenTotal === 1 ? "" : "s"}`
             : "You're all caught up"
         }
         right={
@@ -69,11 +71,11 @@ export default function NotificationsScreen() {
                 },
               ]}
             >
-              <Feather name="check" size={16} color={colors.secondaryForeground} />
+              <Feather name="check" size={16} color={colors.radarGreen} />
               <Text
                 style={[
                   styles.actionText,
-                  { color: colors.secondaryForeground },
+                  { color: colors.foreground },
                 ]}
               >
                 Mark all
@@ -83,7 +85,11 @@ export default function NotificationsScreen() {
         }
       />
 
-      <View style={styles.filters}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.filtersRow}
+      >
         {FILTERS.map((f) => {
           const active = filter === f.id;
           return (
@@ -93,8 +99,8 @@ export default function NotificationsScreen() {
               style={({ pressed }) => [
                 styles.chip,
                 {
-                  backgroundColor: active ? colors.primary : colors.card,
-                  borderColor: active ? colors.primary : colors.border,
+                  backgroundColor: active ? colors.radarGreen : colors.card,
+                  borderColor: active ? colors.radarGreen : colors.border,
                   opacity: pressed ? 0.85 : 1,
                 },
               ]}
@@ -102,7 +108,7 @@ export default function NotificationsScreen() {
               <Text
                 style={[
                   styles.chipText,
-                  { color: active ? colors.primaryForeground : colors.foreground },
+                  { color: active ? colors.brandNavy : colors.foreground },
                 ]}
               >
                 {f.label}
@@ -110,7 +116,7 @@ export default function NotificationsScreen() {
             </Pressable>
           );
         })}
-      </View>
+      </ScrollView>
 
       <FlatList
         data={filtered}
@@ -130,11 +136,11 @@ export default function NotificationsScreen() {
         ListEmptyComponent={
           <EmptyState
             icon="bell-off"
-            title="No notifications"
+            title="No signals"
             message={
               filter === "unread"
-                ? "Nothing unread right now. Trigger a simulation from the dashboard to see how alerts feel."
-                : "When new email arrives in any connected inbox, it shows up here instantly."
+                ? "Nothing unread right now. Trigger a simulation from the Radar tab to see how alerts feel."
+                : "When new activity arrives in any connected source, it shows up here instantly."
             }
           />
         }
@@ -145,11 +151,11 @@ export default function NotificationsScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  filters: {
+  filtersRow: {
     flexDirection: "row",
     gap: 8,
     paddingHorizontal: 20,
-    marginBottom: 12,
+    paddingBottom: 12,
   },
   chip: {
     paddingHorizontal: 14,

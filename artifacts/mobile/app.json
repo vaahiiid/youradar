@@ -1,24 +1,31 @@
 {
   "expo": {
-    "name": "Inbox Pulse",
+    "name": "YourRadar",
     "slug": "mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "mobile",
-    "userInterfaceStyle": "automatic",
+    "scheme": "yourradar",
+    "userInterfaceStyle": "dark",
     "newArchEnabled": true,
+    "backgroundColor": "#0B1020",
     "splash": {
       "image": "./assets/images/icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0B0B14"
+      "backgroundColor": "#0B1020"
     },
     "ios": {
       "supportsTablet": false
     },
     "android": {},
     "web": {
-      "favicon": "./assets/images/icon.png"
+      "favicon": "./assets/images/icon.png",
+      "themeColor": "#0B1020",
+      "backgroundColor": "#0B1020",
+      "name": "YourRadar",
+      "shortName": "YourRadar",
+      "description": "YourRadar — every signal, on your radar.",
+      "display": "standalone"
     },
     "plugins": [
       [

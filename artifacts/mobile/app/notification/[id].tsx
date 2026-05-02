@@ -14,9 +14,15 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ProviderIcon } from "@/components/ProviderIcon";
-import { useInbox } from "@/context/InboxContext";
+import { getInstagramEventLabel, useInbox } from "@/context/InboxContext";
 import { useColors } from "@/hooks/useColors";
 import { formatFullDate, getInitials } from "@/utils/format";
+
+const PROVIDER_NAMES = {
+  gmail: "Gmail",
+  outlook: "Outlook",
+  instagram: "Instagram",
+} as const;
 
 export default function NotificationDetailScreen() {
   const colors = useColors();
@@ -52,14 +58,16 @@ export default function NotificationDetailScreen() {
         <View style={styles.missing}>
           <Feather name="alert-circle" size={32} color={colors.mutedForeground} />
           <Text style={[styles.missingText, { color: colors.foreground }]}>
-            Notification not found
+            Signal not found
           </Text>
         </View>
       </View>
     );
   }
 
-  const providerName = notification.provider === "gmail" ? "Gmail" : "Outlook";
+  const providerName = PROVIDER_NAMES[notification.provider];
+  const isInstagram = notification.provider === "instagram";
+  const eventKind = notification.instagramEventKind;
 
   const openInProvider = async () => {
     if (!notification.providerWebLink) return;
@@ -89,13 +97,23 @@ export default function NotificationDetailScreen() {
         </Text>
 
         <View style={styles.metaRow}>
-          <View
-            style={[styles.tag, { backgroundColor: colors.secondary }]}
-          >
-            <Text style={[styles.tagText, { color: colors.secondaryForeground }]}>
+          <View style={[styles.tag, { backgroundColor: colors.secondary }]}>
+            <Text style={[styles.tagText, { color: colors.radarGreen }]}>
               {providerName}
             </Text>
           </View>
+          {isInstagram && eventKind ? (
+            <View
+              style={[
+                styles.tag,
+                { backgroundColor: "rgba(225, 48, 108, 0.14)" },
+              ]}
+            >
+              <Text style={[styles.tagText, { color: colors.instagram }]}>
+                {getInstagramEventLabel(eventKind)}
+              </Text>
+            </View>
+          ) : null}
           <Text style={[styles.metaText, { color: colors.mutedForeground }]}>
             {formatFullDate(notification.receivedAt)}
           </Text>
@@ -110,10 +128,15 @@ export default function NotificationDetailScreen() {
           <View
             style={[
               styles.avatar,
-              { backgroundColor: colors.primary },
+              { backgroundColor: isInstagram ? colors.instagram : colors.radarGreen },
             ]}
           >
-            <Text style={styles.avatarText}>
+            <Text
+              style={[
+                styles.avatarText,
+                { color: isInstagram ? "#FFFFFF" : colors.brandNavy },
+              ]}
+            >
               {getInitials(notification.senderName)}
             </Text>
           </View>
@@ -131,10 +154,37 @@ export default function NotificationDetailScreen() {
               style={[styles.toLine, { color: colors.mutedForeground }]}
               numberOfLines={1}
             >
-              to {account?.emailAddress ?? notification.emailAddress}
+              {isInstagram ? "via" : "to"}{" "}
+              {account?.emailAddress ?? notification.emailAddress}
             </Text>
           </View>
         </View>
+
+        {notification.mediaCaption ? (
+          <View
+            style={[
+              styles.mediaCard,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+          >
+            <View
+              style={[styles.mediaIconWrap, { backgroundColor: colors.secondary }]}
+            >
+              <Feather name="image" size={18} color={colors.instagram} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.mediaLabel, { color: colors.mutedForeground }]}>
+                Related post
+              </Text>
+              <Text
+                style={[styles.mediaCaption, { color: colors.foreground }]}
+                numberOfLines={2}
+              >
+                {notification.mediaCaption}
+              </Text>
+            </View>
+          </View>
+        ) : null}
 
         <View
           style={[
@@ -143,7 +193,7 @@ export default function NotificationDetailScreen() {
           ]}
         >
           <Text style={[styles.bodyLabel, { color: colors.mutedForeground }]}>
-            Preview
+            {isInstagram ? "Event detail" : "Preview"}
           </Text>
           <Text style={[styles.bodyText, { color: colors.foreground }]}>
             {notification.bodyPreview ?? notification.snippet}
@@ -156,13 +206,13 @@ export default function NotificationDetailScreen() {
           style={({ pressed }) => [
             styles.openBtn,
             {
-              backgroundColor: colors.primary,
+              backgroundColor: colors.radarGreen,
               opacity: !notification.providerWebLink ? 0.5 : pressed ? 0.85 : 1,
             },
           ]}
         >
-          <Feather name="external-link" size={18} color={colors.primaryForeground} />
-          <Text style={[styles.openBtnText, { color: colors.primaryForeground }]}>
+          <Feather name="external-link" size={18} color={colors.brandNavy} />
+          <Text style={[styles.openBtnText, { color: colors.brandNavy }]}>
             Open in {providerName}
           </Text>
         </Pressable>
@@ -226,7 +276,7 @@ const styles = StyleSheet.create({
   metaRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 8,
     marginBottom: 18,
     flexWrap: "wrap",
   },
@@ -262,7 +312,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   avatarText: {
-    color: "#FFFFFF",
     fontFamily: "Inter_700Bold",
     fontSize: 16,
   },
@@ -279,6 +328,34 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_500Medium",
     fontSize: 12,
     marginTop: 4,
+  },
+  mediaCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 14,
+    borderRadius: 18,
+    borderWidth: 1,
+    marginBottom: 14,
+  },
+  mediaIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  mediaLabel: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 10,
+    letterSpacing: 0.6,
+    textTransform: "uppercase",
+    marginBottom: 2,
+  },
+  mediaCaption: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 13,
+    lineHeight: 18,
   },
   bodyCard: {
     padding: 16,

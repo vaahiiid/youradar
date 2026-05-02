@@ -1,70 +1,48 @@
+const navy = {
+  text: "#F7F9FC",
+  tint: "#39FF88",
+
+  background: "#0B1020",
+  foreground: "#F7F9FC",
+
+  card: "#141A30",
+  cardForeground: "#F7F9FC",
+  surfaceElevated: "#1A2140",
+
+  primary: "#39FF88",
+  primaryForeground: "#0B1020",
+
+  secondary: "#1A2140",
+  secondaryForeground: "#A7B0C0",
+
+  muted: "#141A30",
+  mutedForeground: "#A7B0C0",
+
+  accent: "#1A2140",
+  accentForeground: "#39FF88",
+
+  destructive: "#FF3B30",
+  destructiveForeground: "#FFFFFF",
+
+  border: "#23294A",
+  input: "#23294A",
+
+  gmail: "#EA4335",
+  outlook: "#0A66C2",
+  instagram: "#E1306C",
+  success: "#39FF88",
+  warning: "#F5A524",
+
+  brandNavy: "#0B1020",
+  radarGreen: "#39FF88",
+  coolGrey: "#A7B0C0",
+  offWhite: "#F7F9FC",
+  notificationRed: "#FF3B30",
+};
+
 const colors = {
-  light: {
-    text: "#0B0B14",
-    tint: "#4F46E5",
-
-    background: "#F6F7FB",
-    foreground: "#0B0B14",
-
-    card: "#FFFFFF",
-    cardForeground: "#0B0B14",
-
-    primary: "#4F46E5",
-    primaryForeground: "#FFFFFF",
-
-    secondary: "#EEF0FF",
-    secondaryForeground: "#1E1B4B",
-
-    muted: "#F1F2F7",
-    mutedForeground: "#6B7280",
-
-    accent: "#EEF0FF",
-    accentForeground: "#1E1B4B",
-
-    destructive: "#EF4444",
-    destructiveForeground: "#FFFFFF",
-
-    border: "#E5E7EF",
-    input: "#E5E7EF",
-
-    gmail: "#EA4335",
-    outlook: "#0A66C2",
-    success: "#10B981",
-    warning: "#F59E0B",
-  },
-  dark: {
-    text: "#F5F5F7",
-    tint: "#818CF8",
-
-    background: "#0B0B14",
-    foreground: "#F5F5F7",
-
-    card: "#161624",
-    cardForeground: "#F5F5F7",
-
-    primary: "#818CF8",
-    primaryForeground: "#0B0B14",
-
-    secondary: "#1F1F30",
-    secondaryForeground: "#E0E7FF",
-
-    muted: "#1A1A28",
-    mutedForeground: "#9CA3AF",
-
-    accent: "#1F1F30",
-    accentForeground: "#E0E7FF",
-
-    destructive: "#F87171",
-    destructiveForeground: "#0B0B14",
-
-    border: "#23233A",
-    input: "#23233A",
-
-    gmail: "#FF6B5E",
-    outlook: "#4D9EEB",
-    success: "#34D399",
-    warning: "#FBBF24",
-  },
+  light: navy,
+  dark: navy,
   radius: 16,
 };
 
