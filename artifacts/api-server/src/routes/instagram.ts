@@ -1,5 +1,9 @@
 import crypto from "node:crypto";
 import { Router, type IRouter, type Request } from "express";
+import { requireUser } from "../middlewares/auth";
+import { ensureUser } from "../lib/users";
+import { createSource } from "../lib/sources";
+import { maskToken } from "../lib/crypto";
 
 const router: IRouter = Router();
 
@@ -30,12 +34,18 @@ router.get("/webhook", (req, res) => {
   const challenge = req.query["hub.challenge"];
 
   if (!META_VERIFY_TOKEN) {
-    req.log.warn("Instagram webhook verification attempted without META_VERIFY_TOKEN configured");
+    req.log.warn(
+      "Instagram webhook verification attempted without META_VERIFY_TOKEN configured",
+    );
     res.status(503).send("not configured");
     return;
   }
 
-  if (mode === "subscribe" && token === META_VERIFY_TOKEN && typeof challenge === "string") {
+  if (
+    mode === "subscribe" &&
+    token === META_VERIFY_TOKEN &&
+    typeof challenge === "string"
+  ) {
     res.status(200).send(challenge);
     return;
   }
@@ -64,7 +74,9 @@ function verifySignature(req: Request, rawBody: Buffer): boolean {
 
 router.post("/webhook", (req, res) => {
   if (!isConfigured()) {
-    req.log.warn("Instagram webhook received but Meta credentials are not configured");
+    req.log.warn(
+      "Instagram webhook received but Meta credentials are not configured",
+    );
     res.status(503).json({ ok: false, reason: "not_configured" });
     return;
   }
@@ -91,6 +103,10 @@ router.post("/webhook", (req, res) => {
     return;
   }
 
+  // NOTE: Webhook content is not yet routed to a specific user. When notification
+  // ingestion is wired up, fields must be encrypted via createNotification(userId,
+  // {...}) before persistence. Logging here intentionally records only counts +
+  // accountIds (provider-side opaque IDs), never message content.
   const events: Array<{ accountId?: string; field?: string; kind: string }> = [];
   for (const entry of body.entry ?? []) {
     if (entry.changes) {
@@ -98,7 +114,12 @@ router.post("/webhook", (req, res) => {
         events.push({
           accountId: entry.id,
           field: change.field,
-          kind: change.field === "comments" ? "comment" : change.field === "mentions" ? "mention" : "system",
+          kind:
+            change.field === "comments"
+              ? "comment"
+              : change.field === "mentions"
+                ? "mention"
+                : "system",
         });
       }
     }
@@ -107,37 +128,41 @@ router.post("/webhook", (req, res) => {
     }
   }
 
-  req.log.info({ events }, "Instagram webhook events received");
+  req.log.info(
+    { eventCount: events.length, kinds: events.map((e) => e.kind) },
+    "Instagram webhook events received",
+  );
 
   res.status(200).json({ ok: true, accepted: events.length });
 });
 
 const STATE_TTL_MS = 10 * 60 * 1000;
-const oauthStates = new Map<string, number>();
+type StateEntry = { userId: string; expires: number };
+const oauthStates = new Map<string, StateEntry>();
 
 function pruneStates() {
   const now = Date.now();
-  for (const [s, exp] of oauthStates) {
-    if (exp < now) oauthStates.delete(s);
+  for (const [s, entry] of oauthStates) {
+    if (entry.expires < now) oauthStates.delete(s);
   }
 }
 
-function issueState(): string {
+function issueState(userId: string): string {
   pruneStates();
   const state = crypto.randomBytes(24).toString("hex");
-  oauthStates.set(state, Date.now() + STATE_TTL_MS);
+  oauthStates.set(state, { userId, expires: Date.now() + STATE_TTL_MS });
   return state;
 }
 
-function consumeState(state: string): boolean {
+function consumeState(state: string): string | null {
   pruneStates();
-  const expiry = oauthStates.get(state);
-  if (!expiry || expiry < Date.now()) return false;
+  const entry = oauthStates.get(state);
+  if (!entry || entry.expires < Date.now()) return null;
   oauthStates.delete(state);
-  return true;
+  return entry.userId;
 }
 
-router.get("/oauth/start", (req, res) => {
+router.get("/oauth/start", requireUser, async (req, res): Promise<void> => {
   if (!isConfigured() || !INSTAGRAM_REDIRECT_URI) {
     res.status(503).json({
       ok: false,
@@ -148,6 +173,9 @@ router.get("/oauth/start", (req, res) => {
     return;
   }
 
+  const userId = req.userId!;
+  await ensureUser(userId);
+
   const scope = [
     "instagram_basic",
     "instagram_manage_messages",
@@ -157,8 +185,10 @@ router.get("/oauth/start", (req, res) => {
     "pages_read_engagement",
   ].join(",");
 
-  const state = issueState();
-  const url = new URL("https://www.facebook.com/" + GRAPH_API_VERSION + "/dialog/oauth");
+  const state = issueState(userId);
+  const url = new URL(
+    "https://www.facebook.com/" + GRAPH_API_VERSION + "/dialog/oauth",
+  );
   url.searchParams.set("client_id", META_APP_ID);
   url.searchParams.set("redirect_uri", INSTAGRAM_REDIRECT_URI);
   url.searchParams.set("scope", scope);
@@ -168,7 +198,7 @@ router.get("/oauth/start", (req, res) => {
   res.json({ ok: true, authorizeUrl: url.toString(), state });
 });
 
-router.get("/oauth/callback", async (req, res) => {
+router.get("/oauth/callback", async (req, res): Promise<void> => {
   if (!isConfigured() || !INSTAGRAM_REDIRECT_URI) {
     res.status(503).json({ ok: false, reason: "not_configured" });
     return;
@@ -177,7 +207,12 @@ router.get("/oauth/callback", async (req, res) => {
   const code = req.query.code;
   const state = req.query.state;
 
-  if (typeof state !== "string" || !consumeState(state)) {
+  if (typeof state !== "string") {
+    res.status(400).json({ ok: false, reason: "missing_state" });
+    return;
+  }
+  const userId = consumeState(state);
+  if (!userId) {
     req.log.warn("Instagram OAuth callback received with missing or invalid state");
     res.status(400).json({ ok: false, reason: "invalid_state" });
     return;
@@ -199,15 +234,72 @@ router.get("/oauth/callback", async (req, res) => {
 
     const tokenRes = await fetch(tokenUrl.toString());
     if (!tokenRes.ok) {
-      req.log.warn({ status: tokenRes.status }, "Instagram OAuth token exchange failed");
+      req.log.warn(
+        { status: tokenRes.status },
+        "Instagram OAuth token exchange failed",
+      );
       res.status(502).json({ ok: false, reason: "token_exchange_failed" });
       return;
     }
+    const tokenData = (await tokenRes.json()) as {
+      access_token?: string;
+      expires_in?: number;
+      token_type?: string;
+    };
+    const accessToken = tokenData.access_token;
+    if (!accessToken) {
+      req.log.warn("Instagram OAuth response did not contain access_token");
+      res.status(502).json({ ok: false, reason: "no_token" });
+      return;
+    }
+
+    let accountIdentifier = `instagram:${userId.slice(0, 8)}:${Date.now()}`;
+    try {
+      const meRes = await fetch(
+        `https://graph.facebook.com/${GRAPH_API_VERSION}/me?fields=id,name&access_token=${encodeURIComponent(accessToken)}`,
+      );
+      if (meRes.ok) {
+        const me = (await meRes.json()) as { id?: string; name?: string };
+        if (typeof me.name === "string" && me.name.length > 0) {
+          accountIdentifier = me.name;
+        } else if (typeof me.id === "string") {
+          accountIdentifier = `meta:${me.id}`;
+        }
+      }
+    } catch {
+      // identity lookup is best-effort; account_identifier falls back to placeholder
+    }
+
+    const tokenExpiresAt =
+      typeof tokenData.expires_in === "number" && tokenData.expires_in > 0
+        ? new Date(Date.now() + tokenData.expires_in * 1000)
+        : null;
+
+    const created = await createSource(userId, {
+      provider: "instagram",
+      accountIdentifier,
+      displayLabel: null,
+      accessToken,
+      refreshToken: null,
+      tokenExpiresAt,
+    });
+
+    req.log.info(
+      {
+        userId,
+        sourceId: created.id,
+        provider: created.provider,
+        token: maskToken(accessToken),
+        tokenExpiresAt,
+      },
+      "instagram_oauth_persisted",
+    );
 
     res.json({
       ok: true,
+      sourceId: created.id,
       message:
-        "Token received. Persist server-side only and exchange for a long-lived token. Never expose to the client.",
+        "Connected. The provider token is stored encrypted server-side and never exposed to the frontend.",
     });
   } catch (err) {
     req.log.error({ err }, "Instagram OAuth callback error");

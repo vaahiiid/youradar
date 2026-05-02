@@ -1,4 +1,4 @@
-modules = ["nodejs-24", "python-3.11"]
+modules = ["nodejs-24", "python-3.11", "postgresql-16"]
 
 [deployment]
 router = "application"
@@ -36,3 +36,6 @@ externalPort = 3000
 [userenv.shared]
 ENCRYPTION_MASTER_KEY = "qyP8S7B5PMSg2H89+BJbCIEqJFxpHPvrArqWTbOfbc4="
 TOKEN_ENCRYPTION_KEY = "AoPSQyIEAJcBEMLPdZpzQBeGhEDSoS4qpNq1UWZe8Aw="
+
+[nix]
+channel = "stable-25_05"

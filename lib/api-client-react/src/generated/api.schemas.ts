@@ -8,3 +8,99 @@
 export interface HealthStatus {
   status: string;
 }
+
+export interface SessionCreated {
+  userId: string;
+}
+
+export type PrivacyNoticeDetails = {
+  algorithm: string;
+  keyDerivation: string;
+  encryptedFields: string[];
+  plaintextFields: string[];
+  adminAccess: string;
+};
+
+export interface PrivacyNotice {
+  encryption: string;
+  passwords: string;
+  details: PrivacyNoticeDetails;
+}
+
+export interface Source {
+  id: string;
+  provider: string;
+  status: string;
+  accountIdentifier: string;
+  /** @nullable */
+  displayLabel?: string | null;
+  hasAccessToken: boolean;
+  hasRefreshToken: boolean;
+  /** @nullable */
+  tokenExpiresAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SourceListResponse {
+  items: Source[];
+}
+
+export interface CreateSourceBody {
+  provider: string;
+  accountIdentifier: string;
+  /** @nullable */
+  displayLabel?: string | null;
+  /** @nullable */
+  accessToken?: string | null;
+  /** @nullable */
+  refreshToken?: string | null;
+  /** @nullable */
+  tokenExpiresAt?: string | null;
+}
+
+export interface RenameSourceBody {
+  /** @nullable */
+  displayLabel: string | null;
+}
+
+export interface Notification {
+  id: string;
+  sourceId: string;
+  provider: string;
+  kind: string;
+  occurredAt: string;
+  isSeen: boolean;
+  title: string;
+  /** @nullable */
+  snippet?: string | null;
+  /** @nullable */
+  senderName?: string | null;
+  /** @nullable */
+  senderIdentifier?: string | null;
+  /** @nullable */
+  externalRef?: string | null;
+  createdAt: string;
+}
+
+export interface NotificationListResponse {
+  items: Notification[];
+}
+
+export interface CreateNotificationBody {
+  sourceId: string;
+  kind: string;
+  /** @nullable */
+  occurredAt?: string | null;
+  title: string;
+  /** @nullable */
+  snippet?: string | null;
+  /** @nullable */
+  senderName?: string | null;
+  /** @nullable */
+  senderIdentifier?: string | null;
+  /** @nullable */
+  externalRef?: string | null;
+}
+
+export type UserHeaderParameter = string;

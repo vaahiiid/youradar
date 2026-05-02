@@ -63,6 +63,17 @@ Delivery accounts store `deliveryDetails` including `trackingNumber`, `label`, `
 ### Privacy Posture
 The system emphasizes privacy by exclusively using official APIs (Google, Microsoft, Meta, etc.) for integrations. It never requests user passwords, and tokens are securely managed on the server. The design explicitly avoids scraping or mirroring personal app notifications not exposed by official APIs.
 
+### Zero-Trust Field-Level Encryption
+All sensitive fields are encrypted at rest with AES-256-GCM using per-user keys, so no operator can read user content directly from the database.
+
+- **Key derivation:** Two independent master keys (`ENCRYPTION_MASTER_KEY` for content, `TOKEN_ENCRYPTION_KEY` for OAuth tokens) are stored as 32-byte base64 secrets. Per-user, per-domain keys are derived via HKDF-SHA256 with a userId-bound salt and a domain-separated `info` string. Derived key buffers are explicitly zeroized after use.
+- **Encrypted payload shape:** Sensitive columns are stored as `jsonb { v, ct, iv, tag }` blobs. Each record uses a fresh random 12-byte IV and a 16-byte GCM auth tag. Decryption is only possible by the owning user's session.
+- **Encrypted fields:** OAuth access/refresh tokens, account identifiers (email/username), display labels, sender names and identifiers, message titles and snippets, and delivery tracking numbers. Provider name, kind, timestamps, status, and seen flags remain plaintext for indexing.
+- **Authorization model:** Every read and write filters by `req.userId` enforced by middleware (`x-user-id` header today, real session/OAuth integration later). Cross-tenant access returns empty results or 404; ownership is re-verified on every mutation; `source_id` ownership is checked before notifications can attach to it.
+- **Logging discipline:** Pino is configured with `redact` paths covering tokens, decrypted titles/snippets, account identifiers, and the `x-user-id` header. Route handlers log only opaque IDs, provider, kind, and boolean presence flags — never decrypted content. OAuth tokens are masked via `maskToken()` when referenced.
+- **Hardening:** Express enforces a 128 KB JSON body limit (32 KB for url-encoded) to bound abuse; route validators reject oversized strings, unknown providers/kinds, and short/invalid user IDs (401).
+- **Public privacy notice:** `GET /api/privacy` returns the user-facing encryption summary, also surfaced in the mobile **Privacy & Security** card on the Settings screen.
+
 ### Development Mock Mode
 A development mock mode is included, allowing for instant simulation of fake notifications across all 16 providers. This mode helps in testing UI/UX for various notification types and account states without requiring actual API credentials or external calls. It mints synthetic demo accounts if no real ones are connected, ensuring immediate visibility in the dashboard.
 
@@ -73,7 +84,8 @@ A development mock mode is included, allowing for instant simulation of fake not
 - **Express:** Web application framework for the API server.
 - **Pino:** Logger for the API server.
 - **Zod:** Schema declaration and validation library.
-- **Drizzle ORM:** Object-Relational Mapper for database interactions.
+- **Drizzle ORM:** Object-Relational Mapper for database interactions. Schemas in `lib/db/src/schema/` define `users`, `connected_sources`, and `notifications` tables with sensitive columns stored as `jsonb` ciphertext; non-sensitive metadata is indexed for query performance.
+- **Node `node:crypto`:** Native HKDF-SHA256 + AES-256-GCM primitives used by `artifacts/api-server/src/lib/crypto.ts`.
 - **Orval:** API client code generator from OpenAPI specifications.
 - **Google OAuth / Gmail API:** For Gmail integration.
 - **Microsoft OAuth / Microsoft Graph:** For Outlook and Hotmail integration.

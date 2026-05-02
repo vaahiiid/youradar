@@ -5,18 +5,32 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import type {
+  MutationFunction,
   QueryFunction,
   QueryKey,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult,
 } from "@tanstack/react-query";
 
-import type { HealthStatus } from "./api.schemas";
+import type {
+  CreateNotificationBody,
+  CreateSourceBody,
+  HealthStatus,
+  Notification,
+  NotificationListResponse,
+  PrivacyNotice,
+  RenameSourceBody,
+  SessionCreated,
+  Source,
+  SourceListResponse,
+} from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
-import type { ErrorType } from "../custom-fetch";
+import type { ErrorType, BodyType } from "../custom-fetch";
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 
@@ -99,3 +113,706 @@ export function useHealthCheck<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * Mints a fresh user identifier. Pass it in the x-user-id header for all subsequent requests.
+ * @summary Create a new user session
+ */
+export const getCreateSessionUrl = () => {
+  return `/api/auth/session`;
+};
+
+export const createSession = async (
+  options?: RequestInit,
+): Promise<SessionCreated> => {
+  return customFetch<SessionCreated>(getCreateSessionUrl(), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getCreateSessionMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createSession>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createSession>>,
+  TError,
+  void,
+  TContext
+> => {
+  const mutationKey = ["createSession"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createSession>>,
+    void
+  > = () => {
+    return createSession(requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateSessionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createSession>>
+>;
+
+export type CreateSessionMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create a new user session
+ */
+export const useCreateSession = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createSession>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createSession>>,
+  TError,
+  void,
+  TContext
+> => {
+  return useMutation(getCreateSessionMutationOptions(options));
+};
+
+/**
+ * @summary Privacy and encryption disclosures
+ */
+export const getGetPrivacyUrl = () => {
+  return `/api/privacy`;
+};
+
+export const getPrivacy = async (
+  options?: RequestInit,
+): Promise<PrivacyNotice> => {
+  return customFetch<PrivacyNotice>(getGetPrivacyUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetPrivacyQueryKey = () => {
+  return [`/api/privacy`] as const;
+};
+
+export const getGetPrivacyQueryOptions = <
+  TData = Awaited<ReturnType<typeof getPrivacy>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getPrivacy>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetPrivacyQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getPrivacy>>> = ({
+    signal,
+  }) => getPrivacy({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getPrivacy>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetPrivacyQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getPrivacy>>
+>;
+export type GetPrivacyQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Privacy and encryption disclosures
+ */
+
+export function useGetPrivacy<
+  TData = Awaited<ReturnType<typeof getPrivacy>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getPrivacy>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetPrivacyQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List connected sources for the authenticated user
+ */
+export const getListSourcesUrl = () => {
+  return `/api/sources`;
+};
+
+export const listSources = async (
+  options?: RequestInit,
+): Promise<SourceListResponse> => {
+  return customFetch<SourceListResponse>(getListSourcesUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListSourcesQueryKey = () => {
+  return [`/api/sources`] as const;
+};
+
+export const getListSourcesQueryOptions = <
+  TData = Awaited<ReturnType<typeof listSources>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listSources>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListSourcesQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listSources>>> = ({
+    signal,
+  }) => listSources({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listSources>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListSourcesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listSources>>
+>;
+export type ListSourcesQueryError = ErrorType<void>;
+
+/**
+ * @summary List connected sources for the authenticated user
+ */
+
+export function useListSources<
+  TData = Awaited<ReturnType<typeof listSources>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listSources>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListSourcesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Connect a new source. Sensitive fields are encrypted server-side.
+ */
+export const getCreateSourceUrl = () => {
+  return `/api/sources`;
+};
+
+export const createSource = async (
+  createSourceBody: CreateSourceBody,
+  options?: RequestInit,
+): Promise<Source> => {
+  return customFetch<Source>(getCreateSourceUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createSourceBody),
+  });
+};
+
+export const getCreateSourceMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createSource>>,
+    TError,
+    { data: BodyType<CreateSourceBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createSource>>,
+  TError,
+  { data: BodyType<CreateSourceBody> },
+  TContext
+> => {
+  const mutationKey = ["createSource"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createSource>>,
+    { data: BodyType<CreateSourceBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createSource(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateSourceMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createSource>>
+>;
+export type CreateSourceMutationBody = BodyType<CreateSourceBody>;
+export type CreateSourceMutationError = ErrorType<void>;
+
+/**
+ * @summary Connect a new source. Sensitive fields are encrypted server-side.
+ */
+export const useCreateSource = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createSource>>,
+    TError,
+    { data: BodyType<CreateSourceBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createSource>>,
+  TError,
+  { data: BodyType<CreateSourceBody> },
+  TContext
+> => {
+  return useMutation(getCreateSourceMutationOptions(options));
+};
+
+export const getRenameSourceUrl = (id: string) => {
+  return `/api/sources/${id}`;
+};
+
+export const renameSource = async (
+  id: string,
+  renameSourceBody: RenameSourceBody,
+  options?: RequestInit,
+): Promise<Source> => {
+  return customFetch<Source>(getRenameSourceUrl(id), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(renameSourceBody),
+  });
+};
+
+export const getRenameSourceMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof renameSource>>,
+    TError,
+    { id: string; data: BodyType<RenameSourceBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof renameSource>>,
+  TError,
+  { id: string; data: BodyType<RenameSourceBody> },
+  TContext
+> => {
+  const mutationKey = ["renameSource"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof renameSource>>,
+    { id: string; data: BodyType<RenameSourceBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return renameSource(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RenameSourceMutationResult = NonNullable<
+  Awaited<ReturnType<typeof renameSource>>
+>;
+export type RenameSourceMutationBody = BodyType<RenameSourceBody>;
+export type RenameSourceMutationError = ErrorType<void>;
+
+export const useRenameSource = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof renameSource>>,
+    TError,
+    { id: string; data: BodyType<RenameSourceBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof renameSource>>,
+  TError,
+  { id: string; data: BodyType<RenameSourceBody> },
+  TContext
+> => {
+  return useMutation(getRenameSourceMutationOptions(options));
+};
+
+export const getDisconnectSourceUrl = (id: string) => {
+  return `/api/sources/${id}`;
+};
+
+export const disconnectSource = async (
+  id: string,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDisconnectSourceUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDisconnectSourceMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof disconnectSource>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof disconnectSource>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ["disconnectSource"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof disconnectSource>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return disconnectSource(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DisconnectSourceMutationResult = NonNullable<
+  Awaited<ReturnType<typeof disconnectSource>>
+>;
+
+export type DisconnectSourceMutationError = ErrorType<void>;
+
+export const useDisconnectSource = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof disconnectSource>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof disconnectSource>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  return useMutation(getDisconnectSourceMutationOptions(options));
+};
+
+export const getListNotificationsUrl = () => {
+  return `/api/notifications`;
+};
+
+export const listNotifications = async (
+  options?: RequestInit,
+): Promise<NotificationListResponse> => {
+  return customFetch<NotificationListResponse>(getListNotificationsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListNotificationsQueryKey = () => {
+  return [`/api/notifications`] as const;
+};
+
+export const getListNotificationsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listNotifications>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listNotifications>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListNotificationsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listNotifications>>
+  > = ({ signal }) => listNotifications({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listNotifications>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListNotificationsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listNotifications>>
+>;
+export type ListNotificationsQueryError = ErrorType<unknown>;
+
+export function useListNotifications<
+  TData = Awaited<ReturnType<typeof listNotifications>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listNotifications>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListNotificationsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getCreateNotificationUrl = () => {
+  return `/api/notifications`;
+};
+
+export const createNotification = async (
+  createNotificationBody: CreateNotificationBody,
+  options?: RequestInit,
+): Promise<Notification> => {
+  return customFetch<Notification>(getCreateNotificationUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createNotificationBody),
+  });
+};
+
+export const getCreateNotificationMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createNotification>>,
+    TError,
+    { data: BodyType<CreateNotificationBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createNotification>>,
+  TError,
+  { data: BodyType<CreateNotificationBody> },
+  TContext
+> => {
+  const mutationKey = ["createNotification"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createNotification>>,
+    { data: BodyType<CreateNotificationBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createNotification(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateNotificationMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createNotification>>
+>;
+export type CreateNotificationMutationBody = BodyType<CreateNotificationBody>;
+export type CreateNotificationMutationError = ErrorType<void>;
+
+export const useCreateNotification = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createNotification>>,
+    TError,
+    { data: BodyType<CreateNotificationBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createNotification>>,
+  TError,
+  { data: BodyType<CreateNotificationBody> },
+  TContext
+> => {
+  return useMutation(getCreateNotificationMutationOptions(options));
+};
+
+export const getMarkNotificationSeenUrl = (id: string) => {
+  return `/api/notifications/${id}/seen`;
+};
+
+export const markNotificationSeen = async (
+  id: string,
+  options?: RequestInit,
+): Promise<Notification> => {
+  return customFetch<Notification>(getMarkNotificationSeenUrl(id), {
+    ...options,
+    method: "PATCH",
+  });
+};
+
+export const getMarkNotificationSeenMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof markNotificationSeen>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof markNotificationSeen>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ["markNotificationSeen"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof markNotificationSeen>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return markNotificationSeen(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type MarkNotificationSeenMutationResult = NonNullable<
+  Awaited<ReturnType<typeof markNotificationSeen>>
+>;
+
+export type MarkNotificationSeenMutationError = ErrorType<void>;
+
+export const useMarkNotificationSeen = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof markNotificationSeen>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof markNotificationSeen>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  return useMutation(getMarkNotificationSeenMutationOptions(options));
+};

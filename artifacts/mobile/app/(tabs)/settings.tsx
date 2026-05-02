@@ -282,6 +282,63 @@ export default function SettingsScreen() {
           </View>
         ) : null}
 
+        <SectionTitle>Privacy & Security</SectionTitle>
+        <View
+          style={[
+            styles.privacyCard,
+            { backgroundColor: colors.card, borderColor: colors.border },
+          ]}
+        >
+          <View style={styles.privacyHeader}>
+            <View
+              style={[
+                styles.privacyBadge,
+                { backgroundColor: colors.radarBlue + "1A" },
+              ]}
+            >
+              <Feather name="lock" size={14} color={colors.radarBlue} />
+            </View>
+            <Text style={[styles.privacyTitle, { color: colors.foreground }]}>
+              End-to-end inspired encryption
+            </Text>
+          </View>
+          <Text
+            style={[styles.privacyBody, { color: colors.mutedForeground }]}
+          >
+            YouRadar uses end-to-end inspired encryption principles. Your
+            connected data is encrypted and only visible to you. Even system
+            administrators cannot read your private notifications.
+          </Text>
+          <Text
+            style={[styles.privacyBody, { color: colors.mutedForeground }]}
+          >
+            We never store your passwords. All connections use secure provider
+            authentication (OAuth).
+          </Text>
+          <View
+            style={[
+              styles.privacyDetail,
+              { borderTopColor: colors.border },
+            ]}
+          >
+            <PrivacyDetailRow
+              icon="shield"
+              label="AES-256-GCM"
+              value="Per-record IV + auth tag"
+            />
+            <PrivacyDetailRow
+              icon="key"
+              label="HKDF-SHA256"
+              value="Unique key per user"
+            />
+            <PrivacyDetailRow
+              icon="eye-off"
+              label="Encrypted at rest"
+              value="Tokens · titles · senders · trackers"
+            />
+          </View>
+        </View>
+
         <SectionTitle>About</SectionTitle>
         <Group>
           <InfoRow label="Version" value="1.0.0" />
@@ -464,6 +521,32 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   );
 }
 
+function PrivacyDetailRow({
+  icon,
+  label,
+  value,
+}: {
+  icon: keyof typeof Feather.glyphMap;
+  label: string;
+  value: string;
+}) {
+  const colors = useColors();
+  return (
+    <View style={styles.privacyDetailRow}>
+      <Feather name={icon} size={13} color={colors.radarBlue} />
+      <Text style={[styles.privacyDetailLabel, { color: colors.foreground }]}>
+        {label}
+      </Text>
+      <Text
+        style={[styles.privacyDetailValue, { color: colors.mutedForeground }]}
+        numberOfLines={1}
+      >
+        {value}
+      </Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   root: { flex: 1 },
   scroll: { paddingHorizontal: 20 },
@@ -530,6 +613,56 @@ const styles = StyleSheet.create({
   divider: {
     height: StyleSheet.hairlineWidth,
     marginLeft: 60,
+  },
+  privacyCard: {
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: 16,
+    marginBottom: 18,
+    gap: 10,
+  },
+  privacyHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  privacyBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  privacyTitle: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 15,
+    letterSpacing: -0.2,
+  },
+  privacyBody: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  privacyDetail: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingTop: 12,
+    marginTop: 4,
+    gap: 8,
+  },
+  privacyDetailRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  privacyDetailLabel: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 12,
+  },
+  privacyDetailValue: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 12,
+    flex: 1,
+    textAlign: "right",
   },
   brandFooter: {
     alignItems: "center",

@@ -10,6 +10,14 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Session bootstrap
+  - name: sources
+    description: Connected provider accounts
+  - name: notifications
+    description: Encrypted notification feed
+  - name: privacy
+    description: Privacy and encryption disclosures
 paths:
   /healthz:
     get:
@@ -24,7 +32,176 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /auth/session:
+    post:
+      operationId: createSession
+      tags: [auth]
+      summary: Create a new user session
+      description: Mints a fresh user identifier. Pass it in the x-user-id header for all subsequent requests.
+      responses:
+        "201":
+          description: Session created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionCreated"
+  /privacy:
+    get:
+      operationId: getPrivacy
+      tags: [privacy]
+      summary: Privacy and encryption disclosures
+      responses:
+        "200":
+          description: Privacy notice
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PrivacyNotice"
+  /sources:
+    get:
+      operationId: listSources
+      tags: [sources]
+      summary: List connected sources for the authenticated user
+      parameters:
+        - $ref: "#/components/parameters/UserHeader"
+      responses:
+        "200":
+          description: Sources
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SourceListResponse"
+        "401":
+          description: Missing or invalid user
+    post:
+      operationId: createSource
+      tags: [sources]
+      summary: Connect a new source. Sensitive fields are encrypted server-side.
+      parameters:
+        - $ref: "#/components/parameters/UserHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSourceBody"
+      responses:
+        "201":
+          description: Connected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Source"
+        "400":
+          description: Invalid input
+        "401":
+          description: Missing or invalid user
+  /sources/{id}:
+    patch:
+      operationId: renameSource
+      tags: [sources]
+      parameters:
+        - $ref: "#/components/parameters/UserHeader"
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RenameSourceBody"
+      responses:
+        "200":
+          description: Renamed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Source"
+        "404":
+          description: Not found
+    delete:
+      operationId: disconnectSource
+      tags: [sources]
+      parameters:
+        - $ref: "#/components/parameters/UserHeader"
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Disconnected
+        "404":
+          description: Not found
+  /notifications:
+    get:
+      operationId: listNotifications
+      tags: [notifications]
+      parameters:
+        - $ref: "#/components/parameters/UserHeader"
+      responses:
+        "200":
+          description: Notifications
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationListResponse"
+    post:
+      operationId: createNotification
+      tags: [notifications]
+      parameters:
+        - $ref: "#/components/parameters/UserHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateNotificationBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notification"
+        "400":
+          description: Invalid input
+        "404":
+          description: Source not found
+  /notifications/{id}/seen:
+    patch:
+      operationId: markNotificationSeen
+      tags: [notifications]
+      parameters:
+        - $ref: "#/components/parameters/UserHeader"
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notification"
+        "404":
+          description: Not found
 components:
+  parameters:
+    UserHeader:
+      in: header
+      name: x-user-id
+      required: true
+      schema:
+        type: string
+        minLength: 8
+        maxLength: 128
   schemas:
     HealthStatus:
       type: object
@@ -33,4 +210,173 @@ components:
           type: string
       required:
         - status
-
+    SessionCreated:
+      type: object
+      required: [userId]
+      properties:
+        userId:
+          type: string
+    PrivacyNotice:
+      type: object
+      required: [encryption, passwords, details]
+      properties:
+        encryption:
+          type: string
+        passwords:
+          type: string
+        details:
+          type: object
+          required:
+            - algorithm
+            - keyDerivation
+            - encryptedFields
+            - plaintextFields
+            - adminAccess
+          properties:
+            algorithm:
+              type: string
+            keyDerivation:
+              type: string
+            encryptedFields:
+              type: array
+              items:
+                type: string
+            plaintextFields:
+              type: array
+              items:
+                type: string
+            adminAccess:
+              type: string
+    Source:
+      type: object
+      required:
+        - id
+        - provider
+        - status
+        - accountIdentifier
+        - hasAccessToken
+        - hasRefreshToken
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+        provider:
+          type: string
+        status:
+          type: string
+        accountIdentifier:
+          type: string
+        displayLabel:
+          type: ["string", "null"]
+        hasAccessToken:
+          type: boolean
+        hasRefreshToken:
+          type: boolean
+        tokenExpiresAt:
+          type: ["string", "null"]
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    SourceListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Source"
+    CreateSourceBody:
+      type: object
+      required: [provider, accountIdentifier]
+      properties:
+        provider:
+          type: string
+        accountIdentifier:
+          type: string
+        displayLabel:
+          type: ["string", "null"]
+        accessToken:
+          type: ["string", "null"]
+        refreshToken:
+          type: ["string", "null"]
+        tokenExpiresAt:
+          type: ["string", "null"]
+          format: date-time
+    RenameSourceBody:
+      type: object
+      required: [displayLabel]
+      properties:
+        displayLabel:
+          type: ["string", "null"]
+    Notification:
+      type: object
+      required:
+        - id
+        - sourceId
+        - provider
+        - kind
+        - occurredAt
+        - isSeen
+        - title
+        - createdAt
+      properties:
+        id:
+          type: string
+        sourceId:
+          type: string
+        provider:
+          type: string
+        kind:
+          type: string
+        occurredAt:
+          type: string
+          format: date-time
+        isSeen:
+          type: boolean
+        title:
+          type: string
+        snippet:
+          type: ["string", "null"]
+        senderName:
+          type: ["string", "null"]
+        senderIdentifier:
+          type: ["string", "null"]
+        externalRef:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+    NotificationListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Notification"
+    CreateNotificationBody:
+      type: object
+      required: [sourceId, kind, title]
+      properties:
+        sourceId:
+          type: string
+        kind:
+          type: string
+        occurredAt:
+          type: ["string", "null"]
+          format: date-time
+        title:
+          type: string
+        snippet:
+          type: ["string", "null"]
+        senderName:
+          type: ["string", "null"]
+        senderIdentifier:
+          type: ["string", "null"]
+        externalRef:
+          type: ["string", "null"]
