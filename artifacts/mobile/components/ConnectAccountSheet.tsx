@@ -103,6 +103,13 @@ export function ConnectAccountSheet({
 
   const [working, setWorking] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  // Web-only: when we open Google in a new tab via window.open, we keep the
+  // URL around so we can render a fallback link in case the popup was
+  // blocked (or the user closed it accidentally).
+  const [pendingAuthorizeUrl, setPendingAuthorizeUrl] = useState<string | null>(
+    null,
+  );
+  const [linkCopied, setLinkCopied] = useState(false);
   const cancelledRef = useRef(false);
 
   useEffect(() => {
@@ -110,11 +117,52 @@ export function ConnectAccountSheet({
       cancelledRef.current = false;
       setWorking(false);
       setErrorMsg(null);
+      setPendingAuthorizeUrl(null);
+      setLinkCopied(false);
       setTrackingNumber("");
       setLabel("");
       setMerchant("");
     }
   }, [visible]);
+
+  // Web-only: when the popup window finishes OAuth on /oauth-success it
+  // posts a "yourradar:oauth-result" message to its opener — we listen and
+  // navigate the in-iframe app to the success screen.
+  useEffect(() => {
+    if (Platform.OS !== "web") return;
+    if (!visible) return;
+    if (typeof window === "undefined") return;
+    const onMessage = (event: MessageEvent) => {
+      const data = event.data as
+        | { type?: string; payload?: Record<string, string> }
+        | null;
+      if (!data || data.type !== "yourradar:oauth-result") return;
+      const payload = data.payload ?? {};
+      const status =
+        typeof payload.status === "string" ? payload.status : "error";
+      const account =
+        typeof payload.account === "string" ? payload.account : "";
+      const reason =
+        typeof payload.reason === "string" ? payload.reason : "";
+      const sourceId =
+        typeof payload.sourceId === "string" ? payload.sourceId : "";
+      const providerId =
+        typeof payload.provider === "string" ? payload.provider : provider;
+      onClose();
+      router.push({
+        pathname: "/oauth-success",
+        params: {
+          provider: String(providerId),
+          status,
+          account,
+          reason,
+          sourceId,
+        },
+      });
+    };
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, [visible, provider, router, onClose]);
 
   if (!provider) return null;
 
@@ -177,12 +225,52 @@ export function ConnectAccountSheet({
 
       // 2. Open the provider's authorize URL.
       if (Platform.OS === "web") {
-        // Full-page redirect — server callback will redirect back to
-        // /oauth-success which renders our success route.
+        // CRITICAL: Google (and most OAuth providers) refuse to render the
+        // consent screen inside an iframe — they return a 403 "you do not
+        // have access to this page" via their `disallowed_useragent`
+        // protection. The Replit preview wraps this app in an iframe, so
+        // we MUST break out by opening a new top-level browser tab.
         if (typeof window !== "undefined") {
-          window.location.href = start.authorizeUrl;
+          // Always remember the URL so the fallback link is always usable.
+          setPendingAuthorizeUrl(start.authorizeUrl);
+
+          let popup: Window | null = null;
+          try {
+            popup = window.open(
+              start.authorizeUrl,
+              "yourradar_oauth",
+              "noopener,noreferrer,width=560,height=720",
+            );
+          } catch {
+            popup = null;
+          }
+
+          if (!popup) {
+            // Popup blocked. As a second attempt, try to escape the iframe
+            // entirely by navigating the *top* frame. If that also fails
+            // (cross-origin top), we fall through and show the manual link.
+            try {
+              if (window.top && window.top !== window.self) {
+                (window.top as Window).location.href = start.authorizeUrl;
+                return;
+              }
+              window.location.href = start.authorizeUrl;
+              return;
+            } catch {
+              setErrorMsg(
+                "Your browser blocked the Gmail popup. Use the link below to open it manually.",
+              );
+              setWorking(false);
+              return;
+            }
+          }
+          // Popup opened. Keep `working=true` until the popup posts back via
+          // window.postMessage (handled in the effect above). We do NOT
+          // navigate the in-iframe app away — that would interrupt the
+          // listener.
+          return;
         }
-        return; // unmounting — no further work
+        return;
       }
 
       const result = await WebBrowser.openAuthSessionAsync(
@@ -305,6 +393,58 @@ export function ConnectAccountSheet({
                 working={working}
                 errorMsg={errorMsg}
                 reducedMotion={settings.reducedMotion}
+                pendingAuthorizeUrl={pendingAuthorizeUrl}
+                linkCopied={linkCopied}
+                onCopyLink={async () => {
+                  if (!pendingAuthorizeUrl) return;
+                  try {
+                    if (
+                      Platform.OS === "web" &&
+                      typeof navigator !== "undefined" &&
+                      navigator.clipboard
+                    ) {
+                      await navigator.clipboard.writeText(pendingAuthorizeUrl);
+                      setLinkCopied(true);
+                      setTimeout(() => setLinkCopied(false), 2000);
+                    }
+                  } catch {
+                    // ignore
+                  }
+                }}
+                onOpenLink={() => {
+                  if (!pendingAuthorizeUrl) return;
+                  if (
+                    Platform.OS === "web" &&
+                    typeof window !== "undefined"
+                  ) {
+                    // Try popup first, then fall back to top-frame
+                    // navigation. We log the URL so it's visible in the
+                    // browser console for manual testing.
+                    // eslint-disable-next-line no-console
+                    console.log(
+                      "[YourRadar OAuth] authorizeUrl:",
+                      pendingAuthorizeUrl,
+                    );
+                    const w = window.open(
+                      pendingAuthorizeUrl,
+                      "yourradar_oauth",
+                      "noopener,noreferrer,width=560,height=720",
+                    );
+                    if (!w) {
+                      try {
+                        if (window.top && window.top !== window.self) {
+                          (window.top as Window).location.href =
+                            pendingAuthorizeUrl;
+                        } else {
+                          window.location.href = pendingAuthorizeUrl;
+                        }
+                      } catch {
+                        // popup blocked + cross-origin top — user must
+                        // copy the link manually.
+                      }
+                    }
+                  }
+                }}
               />
             )}
           </Pressable>
@@ -327,6 +467,10 @@ interface OAuthBodyProps {
   working: boolean;
   errorMsg: string | null;
   reducedMotion: boolean;
+  pendingAuthorizeUrl?: string | null;
+  linkCopied?: boolean;
+  onCopyLink?: () => void;
+  onOpenLink?: () => void;
 }
 
 function OAuthBody({
@@ -339,6 +483,10 @@ function OAuthBody({
   working,
   errorMsg,
   reducedMotion,
+  pendingAuthorizeUrl,
+  linkCopied,
+  onCopyLink,
+  onOpenLink,
 }: OAuthBodyProps) {
   const showStatusBadge = status !== "configured";
   const badgeLabel =
@@ -411,6 +559,103 @@ function OAuthBody({
           <Feather name="alert-triangle" size={14} color={colors.destructive} />
           <Text style={[styles.noteText, { color: colors.destructive }]}>
             {errorMsg}
+          </Text>
+        </View>
+      ) : null}
+
+      {pendingAuthorizeUrl && Platform.OS === "web" ? (
+        <View
+          style={[
+            styles.note,
+            {
+              backgroundColor: colors.surfaceElevated,
+              borderColor: colors.border,
+              flexDirection: "column",
+              alignItems: "stretch",
+              gap: 10,
+            },
+          ]}
+        >
+          <Text
+            style={[
+              styles.noteText,
+              { color: colors.mutedForeground, marginBottom: 2 },
+            ]}
+          >
+            If a new tab didn&apos;t open, use this link in a normal browser
+            tab — Google blocks OAuth inside embedded previews.
+          </Text>
+          <View
+            style={{
+              flexDirection: "row",
+              gap: 8,
+              flexWrap: "wrap",
+            }}
+          >
+            <Pressable
+              onPress={onOpenLink}
+              style={({ pressed }) => [
+                {
+                  flex: 1,
+                  minWidth: 180,
+                  height: 40,
+                  borderRadius: 10,
+                  backgroundColor: colors.radarBlue,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  opacity: pressed ? 0.85 : 1,
+                  paddingHorizontal: 12,
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.buttonText,
+                  { color: colors.primaryForeground, fontSize: 13 },
+                ]}
+              >
+                Open {providerName} connection in browser
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={onCopyLink}
+              style={({ pressed }) => [
+                {
+                  height: 40,
+                  borderRadius: 10,
+                  borderWidth: 1,
+                  borderColor: colors.radarBlue,
+                  backgroundColor: "#FFFFFF",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  opacity: pressed ? 0.8 : 1,
+                  paddingHorizontal: 14,
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.buttonText,
+                  { color: colors.radarBlue, fontSize: 13 },
+                ]}
+              >
+                {linkCopied ? "Copied ✓" : "Copy link"}
+              </Text>
+            </Pressable>
+          </View>
+          <Text
+            selectable
+            style={{
+              fontFamily: "Inter_500Medium",
+              fontSize: 11,
+              color: colors.mutedForeground,
+              padding: 8,
+              borderRadius: 6,
+              backgroundColor: "rgba(0,0,0,0.04)",
+            }}
+            numberOfLines={3}
+          >
+            {pendingAuthorizeUrl}
           </Text>
         </View>
       ) : null}

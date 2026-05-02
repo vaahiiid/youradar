@@ -1,7 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useMemo } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import React, { useEffect, useMemo, useState } from "react";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ProviderIcon } from "@/components/ProviderIcon";
@@ -51,6 +51,51 @@ export default function OAuthSuccessScreen() {
 
   const isOk = status === "ok" && provider !== null && account.length > 0;
   const providerName = provider ? PROVIDER_LABELS[provider] : "Provider";
+
+  // Web only: when this screen is rendered inside the OAuth popup window,
+  // forward the result to the opener (which is the in-iframe app) so the
+  // user lands on the success screen back inside the main app, then close
+  // the popup. We attempt to close immediately on success so the user
+  // doesn't have to manage the popup themselves.
+  const [isPopup, setIsPopup] = useState(false);
+  useEffect(() => {
+    if (Platform.OS !== "web") return;
+    if (typeof window === "undefined") return;
+    let opener: Window | null = null;
+    try {
+      opener = window.opener as Window | null;
+    } catch {
+      opener = null;
+    }
+    if (!opener) return;
+    setIsPopup(true);
+    try {
+      opener.postMessage(
+        {
+          type: "yourradar:oauth-result",
+          payload: {
+            provider: provider ?? "",
+            status,
+            account,
+            reason,
+            sourceId: asString(params.sourceId),
+          },
+        },
+        "*",
+      );
+    } catch {
+      // ignore — fallback UI below lets the user close manually
+    }
+    // Close after a short delay so the user briefly sees confirmation.
+    const t = setTimeout(() => {
+      try {
+        window.close();
+      } catch {
+        // ignore — user can close manually
+      }
+    }, 1200);
+    return () => clearTimeout(t);
+  }, [provider, status, account, reason, params.sourceId]);
 
   const headline = useMemo(() => {
     if (isOk) return `${account} is now connected to YourRadar.`;
@@ -140,6 +185,32 @@ export default function OAuthSuccessScreen() {
       </View>
 
       <View style={styles.actions}>
+        {isPopup ? (
+          <Pressable
+            onPress={() => {
+              if (Platform.OS === "web" && typeof window !== "undefined") {
+                try {
+                  window.close();
+                } catch {
+                  // ignore
+                }
+              }
+            }}
+            style={({ pressed }) => [
+              styles.primaryBtn,
+              {
+                backgroundColor: colors.radarBlue,
+                opacity: pressed ? 0.85 : 1,
+              },
+            ]}
+          >
+            <Text
+              style={[styles.primaryBtnText, { color: colors.primaryForeground }]}
+            >
+              Close this window
+            </Text>
+          </Pressable>
+        ) : null}
         <Pressable
           onPress={() => router.replace("/(tabs)")}
           style={({ pressed }) => [
