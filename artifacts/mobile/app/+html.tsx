@@ -53,4 +53,18 @@ a:focus, a:focus-visible {
   outline: none !important;
   box-shadow: none !important;
 }
+
+button, [role="button"], [role="tab"] {
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+[role="tablist"] [role="button"]:hover,
+[role="tablist"] [role="button"]:active,
+[role="tablist"] [role="button"]:focus {
+  background-color: transparent !important;
+  background-image: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
 `;

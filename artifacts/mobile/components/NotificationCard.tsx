@@ -112,12 +112,11 @@ export function NotificationCard({ item, onPress }: NotificationCardProps) {
         styles.card,
         {
           backgroundColor: colors.card,
-          // Subtle border for read alerts, single-pixel accent border for
-          // unread — avoids the previous heavy double-pixel blue ring.
           borderColor: item.isSeen ? colors.border : colors.radarBlue,
           borderWidth: 1,
           opacity: pressed ? 0.85 : 1,
         },
+        !item.isSeen && styles.cardUnread,
       ]}
     >
       <View style={styles.row}>
@@ -260,14 +259,20 @@ const styles = StyleSheet.create({
     maxWidth: "100%",
     minWidth: 0,
     overflow: "hidden",
-    borderRadius: 18,
-    padding: 14,
-    marginBottom: 10,
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 12,
     shadowColor: "#0B1020",
     shadowOpacity: 0.04,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 4 },
     elevation: 1,
+  },
+  cardUnread: {
+    shadowColor: "#2F80ED",
+    shadowOpacity: 0.15,
+    shadowRadius: 1,
+    shadowOffset: { width: 0, height: 0 },
   },
   row: {
     flexDirection: "row",

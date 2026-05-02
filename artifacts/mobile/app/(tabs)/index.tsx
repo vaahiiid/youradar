@@ -111,7 +111,7 @@ export default function DashboardScreen() {
     return PROVIDER_ORDER.filter((p) => set.has(p));
   }, [connectedProviders, notifications]);
 
-  const bottomPad = (Platform.OS === "web" ? 100 : insets.bottom + 80) + 24;
+  const bottomPad = (Platform.OS === "web" ? 96 : insets.bottom + 80) + 24;
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
@@ -383,7 +383,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scroll: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
   },
   bell: {
     width: 44,

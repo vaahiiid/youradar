@@ -1,0 +1,153 @@
+The UI is still broken. Do a precise layout fix. Do not approximate.
+
+This is a strict mobile layout bug fix for the Alerts screen.
+
+1. Fix alert card width (main issue)
+
+Every alert card must NOT touch screen edges and must NOT overflow.
+
+Wrap all cards inside a container with:
+
+padding-left: 16px;
+padding-right: 16px;
+
+Then for each AlertCard:
+
+width: 100%;
+max-width: 100%;
+border-radius: 20px;
+
+IMPORTANT:
+Remove any width like:
+- width: 100vw
+- calc(100vw - ...)
+- fixed widths
+
+Cards must live inside the padded container only.
+
+2. Fix the blue border (very important)
+
+The current blue border is too thick and visually breaks layout.
+
+Change:
+- border: 2px solid blue → REMOVE
+
+Replace with:
+- border: 1px solid #E5E7EB (default)
+- unread card:
+    border: 1px solid #2F80ED
+    box-shadow: 0 0 0 1px rgba(47,128,237,0.15)
+
+Make it subtle, not aggressive.
+
+3. Fix bottom navigation (major UX issue)
+
+The current selected tab with a full blue rectangle is WRONG.
+
+Remove that completely.
+
+Replace selected state with:
+- blue icon
+- blue label
+- optional small top indicator line (2px height)
+- NO big border box
+
+Bottom nav must be:
+
+height: 64px;
+padding-bottom: env(safe-area-inset-bottom);
+border-top: 1px solid #E5E7EB;
+background: white;
+
+And page content must have:
+
+padding-bottom: 96px;
+
+So content never hides behind nav.
+
+4. Fix horizontal overflow globally
+
+Add:
+
+html, body {
+  overflow-x: hidden;
+}
+
+Main app wrapper:
+
+width: 100%;
+max-width: 100%;
+overflow-x: hidden;
+
+5. Fix filter tabs row
+
+Tabs should scroll, not overflow.
+
+Use:
+
+display: flex;
+gap: 8px;
+overflow-x: auto;
+padding: 0 16px 8px 16px;
+
+Each tab:
+
+flex: 0 0 auto;
+white-space: nowrap;
+
+Add right padding so last tab is visible.
+
+6. Fix card internal layout
+
+Inside AlertCard:
+
+Main row:
+
+display: flex;
+gap: 12px;
+
+Content column:
+
+flex: 1;
+min-width: 0;
+
+Text:
+
+overflow-wrap: break-word;
+
+Badges row:
+
+display: flex;
+flex-wrap: wrap;
+gap: 6px;
+
+Badges must NOT force width expansion.
+
+7. Fix spacing consistency
+
+Apply consistent spacing:
+
+- screen padding: 16px
+- card padding: 16px
+- gap between cards: 12px
+- header bottom spacing: 12px
+
+8. Fix last card visibility
+
+Ensure last alert is fully visible above nav:
+
+padding-bottom: calc(100px + env(safe-area-inset-bottom));
+
+9. Acceptance test
+
+Fix is correct ONLY if:
+
+- No horizontal scroll exists
+- Cards do NOT touch screen edges
+- Blue border looks subtle and clean
+- Bottom nav has NO blue rectangle
+- Last card is fully visible
+- Tabs scroll smoothly and are not cut
+- Layout looks like a real production app
+
+Do not redesign. Fix layout correctly.

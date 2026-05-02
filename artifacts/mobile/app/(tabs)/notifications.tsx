@@ -63,7 +63,7 @@ export default function NotificationsScreen() {
     return notifications.filter((n) => n.provider === filter);
   }, [filter, notifications]);
 
-  const bottomPad = (Platform.OS === "web" ? 100 : insets.bottom + 80) + 24;
+  const bottomPad = (Platform.OS === "web" ? 96 : insets.bottom + 80) + 24;
 
   return (
     <View
@@ -206,11 +206,11 @@ const styles = StyleSheet.create({
   filtersRow: {
     flexDirection: "row",
     gap: 8,
-    paddingLeft: 20,
+    paddingLeft: 16,
     // Add extra right padding so the last filter chip is fully visible
     // and not clipped by the screen edge while horizontally scrolling.
-    paddingRight: 28,
-    paddingBottom: 12,
+    paddingRight: 24,
+    paddingBottom: 8,
   },
   chip: {
     flexShrink: 0,
@@ -224,10 +224,10 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   listContent: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
   },
   scanList: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingTop: 4,
   },
   action: {
@@ -250,7 +250,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 999,
     borderWidth: 1,
-    marginHorizontal: 20,
+    marginHorizontal: 16,
     marginBottom: 12,
     // Hug content but cap so the pill never spans the full screen on
     // wider mobile widths.
