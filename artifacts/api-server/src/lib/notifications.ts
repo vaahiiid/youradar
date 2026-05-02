@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { eq, and, desc } from "drizzle-orm";
 import {
   db,
@@ -13,6 +14,17 @@ import {
   newId,
   type EncryptedField,
 } from "./crypto";
+
+/**
+ * Deterministic per-source dedupe hash. Combines the source id (so a
+ * provider-side message id is scoped to a single account) with the
+ * provider message id. Used as the unique-index lookup column.
+ */
+export function externalRefHash(sourceId: string, externalRef: string): string {
+  return createHash("sha256")
+    .update(`${sourceId}:${externalRef}`)
+    .digest("hex");
+}
 
 export type DecryptedNotification = {
   id: string;
@@ -117,6 +129,60 @@ export async function createNotification(
     .returning();
   if (!row) throw new Error("insert_failed");
   return decryptNotificationRow(userId, row);
+}
+
+/**
+ * Idempotent insert used by background sync workers. Unlike
+ * `createNotification`, this is server-internal — it trusts that the
+ * caller has already verified the source belongs to `userId`. Returns
+ * `true` if the row was inserted, `false` if it conflicted (and was
+ * silently ignored). Uses the unique index on
+ * (source_id, external_ref_hash).
+ */
+export async function upsertSyncedNotification(
+  userId: string,
+  input: {
+    sourceId: string;
+    provider: string;
+    kind: string;
+    occurredAt: Date;
+    title: string;
+    snippet?: string | null;
+    senderName?: string | null;
+    senderIdentifier?: string | null;
+    externalRef: string;
+  },
+): Promise<boolean> {
+  const id = newId();
+  const hash = externalRefHash(input.sourceId, input.externalRef);
+  const inserted = await db
+    .insert(notificationsTable)
+    .values({
+      id,
+      userId,
+      sourceId: input.sourceId,
+      provider: input.provider,
+      kind: input.kind,
+      occurredAt: input.occurredAt,
+      isSeen: false,
+      titleEnc: encryptForUser(userId, input.title),
+      snippetEnc: maybeEncryptForUser(userId, input.snippet ?? null),
+      senderNameEnc: maybeEncryptForUser(userId, input.senderName ?? null),
+      senderIdentifierEnc: maybeEncryptForUser(
+        userId,
+        input.senderIdentifier ?? null,
+      ),
+      externalRefEnc: maybeEncryptForUser(userId, input.externalRef),
+      externalRefHash: hash,
+    })
+    .onConflictDoNothing({
+      target: [
+        notificationsTable.sourceId,
+        notificationsTable.externalRefHash,
+      ],
+    })
+    .returning({ id: notificationsTable.id });
+  return inserted.length > 0;
 }
 
 export async function markNotificationSeen(

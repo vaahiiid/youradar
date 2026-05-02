@@ -21,6 +21,11 @@ export const connectedSourcesTable = pgTable(
     accessTokenEnc: jsonb("access_token_enc"),
     refreshTokenEnc: jsonb("refresh_token_enc"),
     tokenExpiresAt: timestamp("token_expires_at", { withTimezone: true }),
+    // Background-sync cursor + status. Plaintext jsonb because it stores
+    // opaque provider IDs (e.g. Gmail historyId) and timestamps, never
+    // user content. Shape: { lastHistoryId?, lastPolledAt?, lastError?,
+    // initialized? } — flexible to evolve per provider.
+    syncState: jsonb("sync_state"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
