@@ -45,7 +45,15 @@ The web version is configured as a standalone PWA with "YourRadar" as its name a
 The system supports push notifications, with permission requested per-platform via Expo. The current implementation uses in-app toasts and per-account unread badges. Future plans involve storing Expo Push tokens and fanning out notifications from the API server.
 
 ### Connected Sources and Providers
-The app supports 16 providers across Email (Gmail, Outlook, Yahoo, AOL, Hotmail), Social (Instagram, LinkedIn, Facebook, Telegram, WhatsApp, TikTok, X), and Deliveries (Evri, DPD, Royal Mail, Amazon). Each provider's status (implemented or roadmap) is indicated. Users can connect multiple accounts per provider. A "connected-only visibility rule" ensures that only providers with active connections or historical notifications appear on the dashboard and in filter chips.
+The app supports 16 providers across Email (Gmail, Outlook, Yahoo, AOL, Hotmail), Social (Instagram, LinkedIn, Facebook, Telegram, WhatsApp, TikTok, X), and Deliveries (Evri, DPD, Royal Mail, Amazon). Each provider's status (implemented or roadmap) is indicated. A "connected-only visibility rule" ensures that only providers with active connections or historical notifications appear on the dashboard and in filter chips.
+
+#### Multi-Account / ConnectedSource Model
+Each connection is a distinct **ConnectedSource** (`ConnectedAccount` in code) — users can connect unlimited accounts per provider (e.g. five Gmail inboxes, two Instagram handles). Every notification is permanently bound to its source via `accountId`, so muting, disconnecting, or filtering a single source affects only its own notifications.
+
+- **Optional friendly label**: When connecting, users can give the source a nickname like "Personal" or "Work". Sources can also be renamed inline from the Sources page.
+- **Duplicate detection**: `connectAccount` returns `{ status: "created" | "duplicate" | "invalid" }`. The Sources page surfaces an inline toast when an address is already connected.
+- **Per-source UI surfacing**: When a provider has more than one connected account, notification cards (in the Alerts feed and Dashboard recent list) automatically show the source label, and the Alerts filter exposes a second-tier sub-chip row to filter to a specific source.
+- **Per-source unread counts**: `unseenByAccount` tracks unread per source; `unseenByProvider` aggregates across all of a provider's sources.
 
 ### Delivery Tracking
 Delivery accounts store `deliveryDetails` including `trackingNumber`, `label`, `merchant`, `expectedAt`, `status`, and `publicTrackingUrl`. Notifications for deliveries feature a status pill, and detail screens show comprehensive delivery information.

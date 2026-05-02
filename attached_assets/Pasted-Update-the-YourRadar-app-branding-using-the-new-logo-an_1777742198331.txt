@@ -1,0 +1,184 @@
+Update the YourRadar app branding using the new logo and colour system.
+
+Do not rebuild the app. Refactor the design system and UI to match the new brand.
+
+Brand assets:
+Primary colours from logo:
+- Teal: #0097b2
+- Charcoal: #544f4d
+
+Background must remain:
+- White / Off-white
+
+You may introduce ONE complementary colour if needed for depth and contrast.
+
+Suggested complementary colour:
+- Soft Blue: #2F80ED OR muted cyan tone close to #0097b2 (do not introduce neon colours)
+
+1. Global design system
+
+Create a clean, premium, modern design system based on:
+
+Background:
+- Primary: #FFFFFF
+- Secondary: #F7F9FC
+
+Text:
+- Primary: #544f4d
+- Secondary: #6B6B6B
+
+Primary accent:
+- #0097b2 (main brand colour)
+
+Secondary accent:
+- slightly darker or lighter variation of #0097b2 for hover/active states
+
+Borders:
+- #E5E7EB
+
+Notification:
+- Red: #FF3B30 (keep for unread badges)
+
+Avoid:
+- bright green (remove completely)
+- random blues not aligned with teal
+- heavy shadows or harsh gradients
+
+2. Logo integration
+
+Use the new logo everywhere consistently:
+
+- Header (left side)
+- Splash / loading screen
+- Login / signup pages
+- Empty states
+- PWA icon if possible
+
+Make the logo slightly larger than before but still balanced.
+
+Do NOT distort or recolour the logo.
+
+3. Radar visual system (important)
+
+Keep the radar identity but update its colours to match the new brand.
+
+Replace previous blue/green radar with:
+
+- Primary radar lines: #0097b2
+- Secondary radar lines: lighter teal (opacity variation)
+- Dots/signals: mix of teal and subtle neutral tones
+
+Radar should feel:
+- clean
+- minimal
+- precise
+- not glowing/neon
+- not gaming-style
+
+Use radar in:
+- Dashboard main card
+- Loading states
+- Scanning indicators
+- Empty states
+- Subtle background patterns (very low opacity)
+
+4. Loading system
+
+Update all loaders:
+
+- Replace old radar colours with teal-based system
+- Keep radar animation
+- Use soft opacity, not harsh glow
+
+Startup loading screen:
+- White background
+- Logo centered
+- Radar animation around logo (teal)
+- Loading percentage
+- Text: “powered by you group”
+
+5. Alerts UI update
+
+Refine alerts UI using new colours:
+
+Unread state:
+- border: 1px solid #0097b2
+- subtle shadow using rgba(0,151,178,0.15)
+
+Read state:
+- border: #E5E7EB
+
+Badges:
+- Provider badge: light background tint of #0097b2
+- Event badge: neutral or soft tint
+
+Text:
+- use charcoal (#544f4d) for main text
+
+Remove any strong blue borders or mismatched colours.
+
+6. Buttons and interactions
+
+Primary button:
+- background: #0097b2
+- text: white
+
+Secondary button:
+- border: #0097b2
+- text: #0097b2
+
+Hover/active:
+- slightly darker teal (auto-generate shade)
+
+No neon, no bright green, no inconsistent colours.
+
+7. Bottom navigation
+
+Fix and align with new brand:
+
+- background: white
+- border-top: #E5E7EB
+- active item:
+  - icon: #0097b2
+  - text: #0097b2
+- inactive:
+  - icon/text: #8A8A8A
+
+Remove any blue rectangle or border completely.
+
+Optional:
+- small top indicator line in teal for active tab
+
+8. Connected sources UI
+
+Make provider cards consistent with new branding:
+
+- clean white cards
+- subtle shadow
+- teal highlights for active/connected states
+- consistent spacing
+
+Do not overuse colour — keep it minimal and clean.
+
+9. Visual consistency rules
+
+Enforce:
+- consistent spacing (16px grid)
+- consistent border radius (16–20px)
+- consistent typography scale
+- no colour clashes
+
+Everything must feel like one cohesive system.
+
+10. Acceptance criteria
+
+This update is complete only when:
+
+- All old blue/green tones are removed
+- The app fully reflects the new logo colours (#0097b2 and #544f4d)
+- The UI looks clean, modern, and premium
+- Radar elements match the new colour system
+- Alerts UI looks balanced and not aggressive
+- Bottom navigation is clean and minimal
+- Logo is used consistently across the app
+- No mismatched colours remain anywhere in the UI

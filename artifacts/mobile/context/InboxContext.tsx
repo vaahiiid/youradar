@@ -30,6 +30,11 @@ interface PersistedState {
   settings: SettingsState;
 }
 
+export type ConnectAccountResult =
+  | { status: "created"; account: ConnectedAccount }
+  | { status: "duplicate"; account: ConnectedAccount }
+  | { status: "invalid"; reason: string };
+
 interface DeliveryInput {
   trackingNumber: string;
   label: string;
@@ -53,11 +58,15 @@ interface InboxContextValue {
   connectAccount: (
     provider: Provider,
     handleOrEmail: string,
-    extras?: { instagramKind?: ConnectedAccount["instagramKind"] },
-  ) => void;
+    extras?: {
+      instagramKind?: ConnectedAccount["instagramKind"];
+      nickname?: string;
+    },
+  ) => ConnectAccountResult;
   addDelivery: (provider: Provider, details: DeliveryInput) => ConnectedAccount;
   disconnectAccount: (accountId: string) => void;
   reconnectAccount: (accountId: string) => void;
+  renameAccount: (accountId: string, displayName: string) => void;
   toggleAccountNotifications: (accountId: string) => void;
   simulateIncoming: (
     provider: Provider,
@@ -786,9 +795,11 @@ function normalizeIdentifier(provider: Provider, raw: string): string {
     return trimmed.startsWith("@") ? trimmed.toLowerCase() : `@${trimmed.toLowerCase()}`;
   }
   if (provider === "telegram") {
-    return trimmed.startsWith("@") || trimmed.includes(":")
-      ? trimmed
-      : `@${trimmed}`;
+    // Bot tokens contain ':' and are case-sensitive; channel/user handles are
+    // case-insensitive and should always be prefixed with '@' for dedupe.
+    if (trimmed.includes(":")) return trimmed;
+    const lower = trimmed.toLowerCase();
+    return lower.startsWith("@") ? lower : `@${lower}`;
   }
   if (
     provider === "gmail" ||
@@ -797,6 +808,20 @@ function normalizeIdentifier(provider: Provider, raw: string): string {
     provider === "aol" ||
     provider === "hotmail"
   ) {
+    return trimmed.toLowerCase();
+  }
+  if (provider === "linkedin") {
+    // Canonicalize linkedin.com/in/<vanity> regardless of scheme/www/trailing slash.
+    const lower = trimmed.toLowerCase().replace(/\/+$/, "");
+    const m = lower.match(/(?:^|\/)in\/([a-z0-9._-]+)$/);
+    return m ? `linkedin.com/in/${m[1]}` : lower;
+  }
+  if (provider === "whatsapp") {
+    // Strip everything but '+' and digits so "+1 555 010-0000" matches "+15550100000".
+    return trimmed.replace(/[^\d+]/g, "");
+  }
+  if (provider === "facebook") {
+    // Page/profile names are case-insensitive on Facebook search.
     return trimmed.toLowerCase();
   }
   return trimmed;
@@ -888,9 +913,11 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
   }, [ready, accounts, notifications, settings]);
 
   const connectAccount = useCallback<InboxContextValue["connectAccount"]>(
-    (provider, handleOrEmail, extras) => {
+    (provider, handleOrEmail, extras): ConnectAccountResult => {
       const trimmed = handleOrEmail.trim();
-      if (!trimmed) return;
+      if (!trimmed) {
+        return { status: "invalid", reason: "Please enter an address or handle." };
+      }
 
       const isEmail =
         provider === "gmail" ||
@@ -899,34 +926,46 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
         provider === "aol" ||
         provider === "hotmail";
       if (isEmail && !trimmed.includes("@")) {
-        return;
+        return { status: "invalid", reason: "Enter a valid email address." };
       }
 
       const normalized = normalizeIdentifier(provider, trimmed);
+      const existing = accounts.find(
+        (a) => a.emailAddress === normalized && a.provider === provider,
+      );
+      if (existing) {
+        return { status: "duplicate", account: existing };
+      }
 
-      setAccounts((prev) => {
-        if (
-          prev.some((a) => a.emailAddress === normalized && a.provider === provider)
-        ) {
-          return prev;
-        }
-        const account: ConnectedAccount = {
-          id: uid(),
-          provider,
-          emailAddress: normalized,
-          displayName: deriveDisplayName(provider, normalized),
-          status: "connected",
-          lastSyncAt: Date.now(),
-          createdAt: Date.now(),
-          notificationsEnabled: true,
-          instagramKind:
-            provider === "instagram" ? extras?.instagramKind ?? "creator" : undefined,
-        };
-        return [...prev, account];
-      });
+      const nickname = extras?.nickname?.trim();
+      const account: ConnectedAccount = {
+        id: uid(),
+        provider,
+        emailAddress: normalized,
+        displayName:
+          nickname && nickname.length > 0
+            ? nickname
+            : deriveDisplayName(provider, normalized),
+        status: "connected",
+        lastSyncAt: Date.now(),
+        createdAt: Date.now(),
+        notificationsEnabled: true,
+        instagramKind:
+          provider === "instagram" ? extras?.instagramKind ?? "creator" : undefined,
+      };
+      setAccounts((prev) => [...prev, account]);
+      return { status: "created", account };
     },
-    [],
+    [accounts],
   );
+
+  const renameAccount = useCallback((accountId: string, displayName: string) => {
+    const next = displayName.trim();
+    if (!next) return;
+    setAccounts((prev) =>
+      prev.map((a) => (a.id === accountId ? { ...a, displayName: next } : a)),
+    );
+  }, []);
 
   const addDelivery = useCallback<InboxContextValue["addDelivery"]>(
     (provider, details) => {
@@ -1122,6 +1161,7 @@ export function InboxProvider({ children }: { children: React.ReactNode }) {
     addDelivery,
     disconnectAccount,
     reconnectAccount,
+    renameAccount,
     toggleAccountNotifications,
     simulateIncoming,
     markSeen,

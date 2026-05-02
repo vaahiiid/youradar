@@ -50,10 +50,20 @@ export function AccountCard({ account, unseen, rightSlot }: AccountCardProps) {
               numberOfLines={1}
               style={[styles.email, { color: colors.foreground }]}
             >
-              {account.emailAddress}
+              {account.displayName || account.emailAddress}
             </Text>
             {unseen > 0 ? <Badge count={unseen} size="sm" /> : null}
           </View>
+
+          {account.displayName &&
+          account.displayName !== account.emailAddress ? (
+            <Text
+              numberOfLines={1}
+              style={[styles.handle, { color: colors.mutedForeground }]}
+            >
+              {account.emailAddress}
+            </Text>
+          ) : null}
 
           <View style={styles.metaRow}>
             <View style={[styles.dot, { backgroundColor: statusColor }]} />
@@ -113,6 +123,12 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontFamily: "Inter_600SemiBold",
     flex: 1,
+  },
+  handle: {
+    fontSize: 12,
+    fontFamily: "Inter_500Medium",
+    marginTop: 1,
+    marginBottom: 4,
   },
   metaRow: {
     flexDirection: "row",

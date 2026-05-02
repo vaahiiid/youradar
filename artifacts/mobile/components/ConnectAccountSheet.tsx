@@ -30,7 +30,10 @@ interface ConnectAccountSheetProps {
   onConnect: (
     provider: Provider,
     handleOrEmail: string,
-    extras?: { instagramKind?: ConnectedAccount["instagramKind"] },
+    extras?: {
+      instagramKind?: ConnectedAccount["instagramKind"];
+      nickname?: string;
+    },
   ) => void;
   onAddDelivery?: (
     provider: Provider,
@@ -219,6 +222,7 @@ export function ConnectAccountSheet({
   const colors = useColors();
   const { settings } = useInbox();
   const [value, setValue] = useState("");
+  const [nickname, setNickname] = useState("");
   const [label, setLabel] = useState("");
   const [merchant, setMerchant] = useState("");
   const [kind, setKind] =
@@ -247,6 +251,7 @@ export function ConnectAccountSheet({
 
   const reset = () => {
     setValue("");
+    setNickname("");
     setLabel("");
     setMerchant("");
     setKind("creator");
@@ -272,6 +277,7 @@ export function ConnectAccountSheet({
     setConnecting(true);
     const submittedProvider = provider;
     const submittedValue = value.trim();
+    const submittedNickname = nickname.trim();
     const submittedLabel = label.trim();
     const submittedMerchant = merchant.trim();
     const submittedKind = kind;
@@ -284,10 +290,16 @@ export function ConnectAccountSheet({
           merchant: submittedMerchant || undefined,
         });
       } else {
+        const extras: {
+          instagramKind?: ConnectedAccount["instagramKind"];
+          nickname?: string;
+        } = {};
+        if (isInstagram) extras.instagramKind = submittedKind;
+        if (submittedNickname) extras.nickname = submittedNickname;
         onConnect(
           submittedProvider,
           submittedValue,
-          isInstagram ? { instagramKind: submittedKind } : undefined,
+          Object.keys(extras).length > 0 ? extras : undefined,
         );
       }
       reset();
@@ -396,6 +408,29 @@ export function ConnectAccountSheet({
                 },
               ]}
             />
+
+            {!isDelivery ? (
+              <>
+                <Text style={[styles.label, { color: colors.mutedForeground }]}>
+                  Label this source (optional)
+                </Text>
+                <TextInput
+                  value={nickname}
+                  onChangeText={setNickname}
+                  placeholder="e.g. Personal, Work, Side project"
+                  placeholderTextColor={colors.mutedForeground}
+                  autoCapitalize="words"
+                  style={[
+                    styles.input,
+                    {
+                      backgroundColor: colors.surfaceElevated,
+                      color: colors.foreground,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                />
+              </>
+            ) : null}
 
             {isDelivery ? (
               <>

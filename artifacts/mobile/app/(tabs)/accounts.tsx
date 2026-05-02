@@ -2,12 +2,15 @@ import { Feather } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
   Alert,
+  KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Switch,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -42,10 +45,66 @@ export default function AccountsScreen() {
     addDelivery,
     disconnectAccount,
     reconnectAccount,
+    renameAccount,
     toggleAccountNotifications,
     settings,
   } = useInbox();
   const [sheetProvider, setSheetProvider] = useState<Provider | null>(null);
+  const [feedback, setFeedback] = useState<{
+    tone: "info" | "warn";
+    message: string;
+  } | null>(null);
+  // Cross-platform rename modal state. We avoid Alert.prompt because it's
+  // iOS-only — Android (and web) silently no-op without a custom UI.
+  const [renameTarget, setRenameTarget] = useState<{
+    id: string;
+    current: string;
+  } | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+
+  React.useEffect(() => {
+    if (!feedback) return;
+    // 5 seconds gives the user (and automated UI tests) a reliable window to
+    // notice the in-app feedback after the connect sheet closes.
+    const t = setTimeout(() => setFeedback(null), 5000);
+    return () => clearTimeout(t);
+  }, [feedback]);
+
+  const promptRename = (id: string, current: string) => {
+    setRenameValue(current);
+    setRenameTarget({ id, current });
+  };
+
+  const submitRename = () => {
+    if (!renameTarget) return;
+    const next = renameValue.trim();
+    if (next && next !== renameTarget.current) {
+      renameAccount(renameTarget.id, next);
+      setFeedback({ tone: "info", message: `Renamed to "${next}".` });
+    }
+    setRenameTarget(null);
+  };
+
+  const handleConnect = (
+    p: Provider,
+    value: string,
+    extras?: { instagramKind?: import("@/types").InstagramAccountKind; nickname?: string },
+  ) => {
+    const result = connectAccount(p, value, extras);
+    if (result.status === "duplicate") {
+      setFeedback({
+        tone: "warn",
+        message: `${PROVIDER_LABELS[p]} · ${result.account.emailAddress} is already connected.`,
+      });
+    } else if (result.status === "invalid") {
+      setFeedback({ tone: "warn", message: result.reason });
+    } else {
+      setFeedback({
+        tone: "info",
+        message: `Connected ${result.account.displayName} (${PROVIDER_LABELS[p]}).`,
+      });
+    }
+  };
 
   const confirmDisconnect = (id: string, label: string) => {
     if (Platform.OS === "web") {
@@ -279,8 +338,23 @@ export default function AccountsScreen() {
                       </Pressable>
                     ) : null}
                     <Pressable
+                      onPress={() => promptRename(account.id, account.displayName)}
+                      style={({ pressed }) => [
+                        styles.iconBtn,
+                        {
+                          backgroundColor: colors.secondary,
+                          opacity: pressed ? 0.85 : 1,
+                        },
+                      ]}
+                    >
+                      <Feather name="edit-2" size={16} color={colors.radarBlue} />
+                    </Pressable>
+                    <Pressable
                       onPress={() =>
-                        confirmDisconnect(account.id, account.emailAddress)
+                        confirmDisconnect(
+                          account.id,
+                          account.displayName || account.emailAddress,
+                        )
                       }
                       style={({ pressed }) => [
                         styles.iconBtn,
@@ -341,9 +415,131 @@ export default function AccountsScreen() {
         visible={sheetProvider !== null}
         provider={sheetProvider}
         onClose={() => setSheetProvider(null)}
-        onConnect={(p, value, extras) => connectAccount(p, value, extras)}
+        onConnect={(p, value, extras) => handleConnect(p, value, extras)}
         onAddDelivery={(p, details) => addDelivery(p, details)}
       />
+
+      {feedback ? (
+        <View
+          pointerEvents="none"
+          style={[
+            styles.feedbackWrap,
+            { bottom: (Platform.OS === "web" ? 100 : insets.bottom + 80) + 12 },
+          ]}
+        >
+          <View
+            style={[
+              styles.feedbackPill,
+              {
+                backgroundColor:
+                  feedback.tone === "warn" ? colors.destructive : colors.foreground,
+              },
+            ]}
+          >
+            <Feather
+              name={feedback.tone === "warn" ? "alert-triangle" : "check-circle"}
+              size={14}
+              color="#FFFFFF"
+            />
+            <Text style={styles.feedbackText}>{feedback.message}</Text>
+          </View>
+        </View>
+      ) : null}
+
+      <Modal
+        visible={renameTarget !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setRenameTarget(null)}
+      >
+        <Pressable
+          style={styles.renameBackdrop}
+          onPress={() => setRenameTarget(null)}
+        >
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : undefined}
+            style={styles.renameKbWrap}
+            pointerEvents="box-none"
+          >
+            <Pressable
+              onPress={(e) => e.stopPropagation()}
+              style={[
+                styles.renameSheet,
+                { backgroundColor: colors.card, borderColor: colors.border },
+              ]}
+            >
+              <Text style={[styles.renameTitle, { color: colors.foreground }]}>
+                Rename source
+              </Text>
+              <Text
+                style={[styles.renameSubtitle, { color: colors.mutedForeground }]}
+              >
+                Give this connected source a friendly label like "Personal" or
+                "Work".
+              </Text>
+              <TextInput
+                value={renameValue}
+                onChangeText={setRenameValue}
+                placeholder="Source label"
+                placeholderTextColor={colors.mutedForeground}
+                autoFocus
+                autoCapitalize="words"
+                onSubmitEditing={submitRename}
+                returnKeyType="done"
+                style={[
+                  styles.renameInput,
+                  {
+                    backgroundColor: colors.surfaceElevated,
+                    color: colors.foreground,
+                    borderColor: colors.border,
+                  },
+                ]}
+              />
+              <View style={styles.renameButtons}>
+                <Pressable
+                  onPress={() => setRenameTarget(null)}
+                  style={({ pressed }) => [
+                    styles.renameBtn,
+                    {
+                      backgroundColor: colors.secondary,
+                      opacity: pressed ? 0.85 : 1,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.renameBtnText,
+                      { color: colors.secondaryForeground },
+                    ]}
+                  >
+                    Cancel
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={submitRename}
+                  disabled={!renameValue.trim()}
+                  style={({ pressed }) => [
+                    styles.renameBtn,
+                    {
+                      backgroundColor: colors.radarBlue,
+                      opacity: !renameValue.trim() ? 0.5 : pressed ? 0.85 : 1,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.renameBtnText,
+                      { color: colors.primaryForeground },
+                    ]}
+                  >
+                    Save
+                  </Text>
+                </Pressable>
+              </View>
+            </Pressable>
+          </KeyboardAvoidingView>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -499,5 +695,85 @@ const styles = StyleSheet.create({
   },
   emptyWrap: {
     paddingVertical: 8,
+  },
+  feedbackWrap: {
+    position: "absolute",
+    left: 16,
+    right: 16,
+    alignItems: "center",
+    // Sit above the bottom tab bar and above any closing modal fade.
+    zIndex: 1000,
+    elevation: 10,
+  },
+  feedbackPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 999,
+    maxWidth: "100%",
+    shadowColor: "#0B1020",
+    shadowOpacity: 0.18,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 4,
+  },
+  feedbackText: {
+    color: "#FFFFFF",
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 13,
+    flexShrink: 1,
+  },
+  renameBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(11, 16, 32, 0.45)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  renameKbWrap: {
+    width: "100%",
+    alignItems: "center",
+  },
+  renameSheet: {
+    width: "100%",
+    maxWidth: 360,
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 20,
+    gap: 12,
+  },
+  renameTitle: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 17,
+  },
+  renameSubtitle: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  renameInput: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    fontSize: 15,
+    fontFamily: "Inter_500Medium",
+  },
+  renameButtons: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 4,
+  },
+  renameBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  renameBtnText: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 14,
   },
 });

@@ -54,6 +54,22 @@ export default function DashboardScreen() {
   const [toast, setToast] = useState<EmailNotification | null>(null);
   const recent = notifications.slice(0, 4);
 
+  // Map provider -> # of connected accounts so the dashboard's recent-cards
+  // can show a per-source label only when it disambiguates.
+  const providerAccountCount = useMemo(() => {
+    const m: Partial<Record<Provider, number>> = {};
+    for (const a of accounts) {
+      m[a.provider] = (m[a.provider] ?? 0) + 1;
+    }
+    return m;
+  }, [accounts]);
+
+  const accountById = useMemo(() => {
+    const m: Record<string, (typeof accounts)[number]> = {};
+    for (const a of accounts) m[a.id] = a;
+    return m;
+  }, [accounts]);
+
   const fire = (provider: Provider, instagramKind?: InstagramEventKind) => {
     if (Platform.OS !== "web") {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
@@ -218,7 +234,11 @@ export default function DashboardScreen() {
                       { color: colors.mutedForeground },
                     ]}
                   >
-                    {count > 0 ? `${count} connected` : "Recent activity"}
+                    {count > 1
+                      ? `${count} accounts`
+                      : count === 1
+                        ? "1 account"
+                        : "Recent activity"}
                   </Text>
                 </View>
               );
@@ -353,13 +373,20 @@ export default function DashboardScreen() {
             </Text>
           </View>
         ) : (
-          recent.map((n) => (
-            <NotificationCard
-              key={n.id}
-              item={n}
-              onPress={() => router.push(`/notification/${n.id}`)}
-            />
-          ))
+          recent.map((n) => {
+            const acct = accountById[n.accountId];
+            const showLabel = (providerAccountCount[n.provider] ?? 0) > 1;
+            const sourceLabel =
+              showLabel && acct ? acct.displayName || acct.emailAddress : undefined;
+            return (
+              <NotificationCard
+                key={n.id}
+                item={n}
+                sourceLabel={sourceLabel}
+                onPress={() => router.push(`/notification/${n.id}`)}
+              />
+            );
+          })
         )}
       </ScrollView>
 

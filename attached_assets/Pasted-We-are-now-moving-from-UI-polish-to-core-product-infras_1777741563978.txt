@@ -1,0 +1,389 @@
+We are now moving from UI polish to core product infrastructure.
+
+Update the existing YourRadar app architecture so it properly supports unlimited multiple accounts per provider for each user.
+
+Do not rebuild the app from scratch. Refactor and extend the existing system.
+
+Product concept:
+YourRadar is not just a notification app. Its core value is that a busy user can connect many different accounts and apps in one place, then instantly understand where each notification came from without checking every app separately.
+
+Example:
+A user may connect:
+- 5 Gmail accounts
+- 3 Outlook accounts
+- 2 Instagram accounts
+- 1 LinkedIn account
+- multiple delivery tracking items
+- multiple Telegram/WhatsApp/TikTok/X/Facebook sources
+
+Each connected account/source must be separate, identifiable, and independently manageable.
+
+1. Core account model
+
+Refactor the data model so every user can have unlimited connected sources.
+
+Important:
+Do not treat “Gmail” as one account.
+Do not treat “Instagram” as one account.
+Each provider can have many connected accounts.
+
+Use this structure:
+
+User
+  has many ConnectedSources
+
+ConnectedSource fields:
+- id
+- userId
+- provider
+- providerType: email | social | messaging | delivery | finance | other
+- displayName
+- accountIdentifier
+- accountAvatarUrl
+- providerAccountId
+- connectionStatus
+- notificationEnabled
+- permissionsGranted
+- lastSyncAt
+- lastEventAt
+- createdAt
+- updatedAt
+
+Examples:
+- provider: gmail
+  displayName: Personal Gmail
+  accountIdentifier: vahid@gmail.com
+
+- provider: gmail
+  displayName: Work Gmail
+  accountIdentifier: work@gmail.com
+
+- provider: instagram
+  displayName: Askimate Instagram
+  accountIdentifier: @askimate
+
+- provider: instagram
+  displayName: Personal Instagram
+  accountIdentifier: @personalhandle
+
+Notifications must always link to a specific ConnectedSource, not only to a provider.
+
+2. Notification model
+
+Every notification must show exactly:
+- which provider it came from
+- which connected account/source it belongs to
+- what type of event it is
+- when it arrived
+- whether it is new/unread/seen
+- source-specific metadata
+
+Notification fields:
+- id
+- userId
+- connectedSourceId
+- provider
+- providerType
+- eventType
+- title
+- snippet
+- senderName
+- senderIdentifier
+- sourceDisplayName
+- sourceIdentifier
+- providerDeepLink
+- receivedAt
+- isSeen
+- isRead
+- priority
+- metadata JSON
+- createdAt
+
+Important:
+A Gmail notification from vahid@gmail.com and a Gmail notification from work@gmail.com must be clearly different in the UI.
+
+3. UI principle
+
+The user must instantly understand:
+- This notification is from which app?
+- This notification is from which specific account inside that app?
+- What happened?
+- Is it important/new?
+- What should I click?
+
+This is the main UX value of the product.
+
+4. Notification card redesign
+
+Update notification cards so they clearly show both provider and account.
+
+Each notification card must include:
+- Provider icon/logo
+- Provider name badge, for example Gmail / Instagram / Outlook
+- Connected account label, for example vahid@gmail.com or @askimate
+- Optional account avatar if available
+- Event type badge, for example Email, DM, Comment, Delivery Update
+- Sender/source name
+- Notification title
+- Short preview/snippet
+- Time received
+- New/unread indicator
+- Open button or tap-to-open behaviour
+
+Suggested layout:
+Top row:
+- Provider icon
+- Sender/source name
+- Time received
+
+Second row:
+- Provider badge
+- Connected account badge
+- Event type badge
+
+Main content:
+- Title
+- Snippet
+
+Footer:
+- “via [accountIdentifier]”
+- optional “Open in Gmail / Instagram / Outlook”
+
+Example card:
+Gmail icon
+Sara Ahmed                         3m ago
+GMAIL   vahid@gmail.com   EMAIL
+New email from Sara Ahmed
+Can you check the proposal before 5pm?
+via Personal Gmail
+
+Example Instagram card:
+Instagram icon
+Jules Park                         8m ago
+INSTAGRAM   @askimate   DIRECT MESSAGE
+New direct message
+Loved your latest post — quick question...
+via Askimate Instagram
+
+5. Connected Sources page
+
+Create a highly user-friendly Connected Sources page.
+
+It should have two sections:
+
+A. Connected sources
+Only show accounts/sources already connected by the user.
+
+Each connected source card must show:
+- Provider icon
+- Provider name
+- Display name
+- Account identifier
+- Connection status
+- Notification enabled toggle
+- Last event time
+- Unread/new count
+- Reconnect button
+- Disconnect button
+- Edit display name button
+
+Users should be able to rename sources locally.
+Example:
+- “Personal Gmail”
+- “Business Gmail”
+- “Askimate Instagram”
+- “University Outlook”
+
+This rename only affects YourRadar display and does not change the external account.
+
+B. Add new source
+Show available providers as connect options:
+- Gmail
+- Outlook
+- Yahoo Mail
+- AOL Mail
+- Hotmail
+- Instagram
+- LinkedIn
+- Facebook
+- Telegram
+- WhatsApp
+- TikTok
+- X
+- Delivery Tracking
+
+Important:
+A user can click “Connect Gmail” multiple times to add multiple Gmail accounts.
+Do not block duplicate providers.
+If the same exact provider account is already connected, detect it and ask:
+“This account is already connected. Do you want to reconnect it?”
+
+6. Dashboard update
+
+The dashboard should show only connected sources and high-level status.
+
+Dashboard requirements:
+- Total active signals across all connected sources
+- Radar visual showing signals from connected sources
+- Connected source summary cards grouped by provider
+- Unread/new count per connected source
+- Recent important signals
+- Quick access to connect another source
+
+Do not show providers that are not connected on the main dashboard.
+
+Example:
+Connected sources:
+- Gmail
+  - Personal Gmail: 2 new
+  - Work Gmail: 5 new
+- Instagram
+  - @askimate: 1 new
+  - @personalhandle: 0 new
+- Outlook
+  - University Outlook: 3 new
+
+7. Filtering and search
+
+Update Alerts filtering.
+
+Filters should work at three levels:
+- All
+- Provider, for example Gmail, Instagram, Outlook
+- Specific connected source, for example vahid@gmail.com, @askimate
+
+User should be able to:
+- Filter by provider
+- Filter by specific account/source
+- Search notifications by sender, title, subject, snippet, account, or provider
+- Sort by newest first
+- Optionally show unread only
+
+UI should remain mobile-friendly.
+
+For filter chips:
+- All
+- Unread
+- Gmail
+- Outlook
+- Instagram
+- Then account-level filters if selected or in a secondary dropdown/sheet
+
+Avoid making the chip row too crowded. Use a “Sources” filter bottom sheet if needed.
+
+8. Source grouping
+
+In Alerts, add optional grouping:
+- Group by time
+- Group by provider
+- Group by connected source
+
+Default should be newest first, mixed from all sources.
+
+The point is:
+The user should not need to open Gmail, Instagram, Outlook, etc. separately to check what happened.
+
+9. Multiple account connection flow
+
+Update OAuth and provider connection logic so each connection creates or updates one ConnectedSource.
+
+When OAuth callback returns account info:
+- Identify provider
+- Identify providerAccountId
+- Identify account email/username
+- Check if this exact account is already connected for this user
+- If not connected, create a new ConnectedSource
+- If already connected, update tokens and status instead of duplicating
+- Allow connecting another account from same provider
+
+After successful connection:
+Show success screen:
+“Connected [accountIdentifier] to YourRadar”
+Buttons:
+- Connect another [provider] account
+- Go to dashboard
+- Manage sources
+
+10. Notification routing
+
+When a provider webhook or sync event arrives:
+- Resolve the exact ConnectedSource
+- Save notification under that connectedSourceId
+- Update unread count for that source
+- Update unread count for that provider
+- Update global unread count
+- Send real-time in-app event
+- Send push notification
+
+Push notification title should include provider and source when useful:
+Example:
+“Gmail: New email from Sara”
+Body:
+“Personal Gmail • Can you check the proposal?”
+
+Example:
+“Instagram: New DM”
+Body:
+“@askimate • Jules Park: Loved your latest post…”
+
+11. User trust copy
+
+Add this product explanation in onboarding or dashboard:
+
+“YourRadar brings your important signals into one place. Connect multiple email, social, messaging, and delivery sources, then see exactly which app and which account each notification came from. No more checking every app separately.”
+
+Also add:
+“You stay in control. Each connected source can be renamed, paused, reconnected, or disconnected at any time.”
+
+12. Database migration
+
+Create or update database schema/migrations to support:
+- users
+- connected_sources
+- provider_tokens
+- provider_permissions
+- notifications
+- notification_preferences
+- push_subscriptions
+- webhook_subscriptions
+- delivery_trackings
+
+Important:
+connected_sources is the central table.
+notifications must reference connected_sources.
+
+13. Development mock mode
+
+Update mock/test mode to support multiple sources.
+
+Developer mode should allow:
+- Create mock Gmail source
+- Create second mock Gmail source
+- Create mock Instagram source
+- Create second mock Instagram source
+- Create notification under selected source
+
+Mock notification form should ask:
+- Provider
+- Connected source
+- Event type
+- Title
+- Snippet
+
+This is important to test multiple accounts from the same provider.
+
+14. Acceptance criteria
+
+This infrastructure update is complete when:
+
+- One user can connect multiple accounts from the same provider.
+- The app does not limit users to one Gmail, one Instagram, or one Outlook.
+- Every notification belongs to a specific connected source.
+- Notification cards clearly show provider and exact account/source.
+- Dashboard only shows connected sources.
+- Alerts can be filtered by provider and by specific connected source.
+- Connected Sources page allows users to rename, pause, reconnect, or disconnect each source.
+- Push notifications include enough context to know which app and account generated the alert.
+- Mock mode can simulate multiple Gmail and Instagram accounts separately.
+- The user can understand the notification source within one second of seeing the card.
+- The product feels like one central place for all important life/work signals.

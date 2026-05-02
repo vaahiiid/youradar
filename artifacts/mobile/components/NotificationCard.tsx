@@ -17,6 +17,12 @@ import { formatRelativeTime } from "@/utils/format";
 interface NotificationCardProps {
   item: EmailNotification;
   onPress: () => void;
+  /**
+   * Friendly source label (e.g. "Personal Gmail") shown when more than one
+   * account exists for this provider so the user can tell sources apart.
+   * When omitted, only the raw email/handle is shown.
+   */
+  sourceLabel?: string;
 }
 
 const INSTAGRAM_ICONS: Record<InstagramEventKind, keyof typeof Feather.glyphMap> = {
@@ -77,7 +83,7 @@ const DELIVERY_STATUS_LABEL: Record<string, string> = {
   unknown: "Unknown",
 };
 
-export function NotificationCard({ item, onPress }: NotificationCardProps) {
+export function NotificationCard({ item, onPress, sourceLabel }: NotificationCardProps) {
   const colors = useColors();
 
   const handlePress = () => {
@@ -241,11 +247,13 @@ export function NotificationCard({ item, onPress }: NotificationCardProps) {
           ) : null}
 
           <Text style={[styles.account, { color: colors.mutedForeground }]} numberOfLines={1}>
-            {isDelivery
-              ? `tracking ${item.emailAddress}`
-              : isHandleProvider
-                ? `via ${item.emailAddress}`
-                : item.emailAddress}
+            {sourceLabel && sourceLabel !== item.emailAddress
+              ? `${sourceLabel} · ${item.emailAddress}`
+              : isDelivery
+                ? `tracking ${item.emailAddress}`
+                : isHandleProvider
+                  ? `via ${item.emailAddress}`
+                  : item.emailAddress}
           </Text>
         </View>
       </View>
