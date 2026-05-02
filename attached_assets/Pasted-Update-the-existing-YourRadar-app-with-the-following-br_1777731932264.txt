@@ -1,0 +1,247 @@
+Update the existing YourRadar app with the following branding, loading experience, and Instagram monitoring feature.
+
+Context:
+The app is called YourRadar. It is a personal notification and life-monitoring dashboard for busy people who want to stay aware of everything important in one place, including email, social media, market alerts, and other life/work signals.
+
+Important:
+Do not rebuild the whole app from scratch. Extend the existing codebase cleanly and keep the current architecture.
+
+1. Branding and logo integration
+
+I have attached a logo/image asset. Add this logo creatively into the app branding.
+
+Use the logo in these places:
+- App splash/loading screen
+- Top-left desktop sidebar branding
+- Mobile header branding
+- PWA app icon where technically possible
+- Login screen
+- Empty states where appropriate
+
+Logo design direction:
+- The logo should feel integrated into the “radar” concept.
+- Add a subtle radar ring or signal pulse around/behind the logo.
+- Do not make it look like a basic uploaded image pasted on the page.
+- Use the brand colours:
+  - Deep Navy: #0B1020
+  - Radar Green: #39FF88
+  - Cool Grey: #A7B0C0
+  - Off White: #F7F9FC
+  - Notification Red: #FF3B30
+
+2. App startup loading screen
+
+Create a polished animated startup/loading screen that appears when the app first opens before the dashboard loads.
+
+Loading screen requirements:
+- Full-screen background using Deep Navy #0B1020.
+- Place the YourRadar logo in the centre.
+- Add an animated radar scan effect around the logo:
+  - circular radar rings
+  - rotating radar sweep line
+  - subtle glowing dots/signals
+  - soft pulse animation
+- Add a stylised loading percentage below the logo.
+- The loading percentage should animate from 0% to 100%.
+- Add a progress bar or circular progress indicator that visually fills as the percentage increases.
+- The progress animation should look premium and radar-themed, not a plain browser loading bar.
+- Under the loading percentage, add the text:
+  “powered by you group”
+- The powered-by text should be small, elegant, and placed near the bottom centre of the loading screen.
+- After loading reaches 100%, smoothly fade into the main dashboard.
+- Add reduced-motion fallback for users who prefer reduced animation.
+
+Suggested loading screen structure:
+- Centre: logo with radar rings
+- Below centre: loading percentage, for example “72%”
+- Below percentage: animated progress indicator
+- Bottom centre: powered by you group
+
+3. PWA splash consistency
+
+Update the PWA manifest and app metadata so the installed app feels consistent with the YourRadar brand.
+
+Requirements:
+- App name: YourRadar
+- Short name: YourRadar
+- Theme colour: #0B1020
+- Background colour: #0B1020
+- Use the attached logo or a generated app icon derived from it if possible.
+- Make the mobile launch experience feel like the custom loading screen.
+
+4. Instagram monitoring feature
+
+Add Instagram as a new monitored source inside YourRadar.
+
+Important technical constraint:
+Instagram personal app notifications cannot be monitored the same way as Gmail or Outlook. Do not use unofficial scraping, password login, browser bots, private APIs, or anything that violates Meta/Instagram terms. Build this using official Meta/Instagram APIs only.
+
+Supported Instagram monitoring should be designed around official API capabilities:
+- Instagram professional/business account connection
+- Instagram Graph API where available
+- Instagram Messaging API where available
+- Meta Webhooks where available
+
+Add a new integration module:
+- /server/integrations/instagram
+- /server/webhooks/instagram
+- /client/features/integrations/instagram
+- /client/features/notifications/instagram
+
+5. Instagram account connection UI
+
+In the Connected Accounts page, add:
+- “Connect Instagram” button
+- Instagram account connection card
+- Provider label: Instagram
+- Account type label: Business / Creator / Professional where available
+- Connection status
+- Last sync/event time
+- Notification count badge
+
+Add a clear note in the UI:
+“Instagram monitoring works through official Meta APIs and may require a professional Instagram account and Meta app permissions.”
+
+6. Instagram notification types
+
+Create a flexible Instagram notification model that can support multiple event types.
+
+Initial supported notification categories:
+- New Instagram DM / message event if official Instagram Messaging API permissions are available
+- New comment event if official webhook permissions are available
+- Mention-related event if supported by the approved API permissions
+- Account/media insight alert if supported
+- Mock Instagram notification for development/testing
+
+Each Instagram notification card should show:
+- Instagram icon
+- Connected Instagram account
+- Event type: DM, Comment, Mention, Insight, or System
+- Sender/user name if available
+- Message/comment preview if available
+- Related media/post thumbnail if available
+- Received date and time
+- Open button
+- Red unread badge if new
+
+7. Instagram webhook backend
+
+Implement backend webhook endpoints for Meta/Instagram.
+
+Requirements:
+- Add GET webhook verification endpoint for Meta challenge verification.
+- Add POST endpoint to receive Instagram webhook events.
+- Validate verify token.
+- Validate app secret proof or request signature where applicable.
+- Validate event payload structure.
+- Convert incoming Instagram events into YourRadar notification records.
+- Send in-app real-time updates through the existing WebSocket/SSE system.
+- Send mobile/web push notifications through the existing Web Push system.
+
+Environment variables to add:
+- META_APP_ID
+- META_APP_SECRET
+- META_VERIFY_TOKEN
+- INSTAGRAM_REDIRECT_URI
+- INSTAGRAM_WEBHOOK_SECRET
+- INSTAGRAM_GRAPH_API_VERSION
+
+8. Instagram OAuth / connection flow
+
+Implement an Instagram/Meta OAuth connection flow where possible.
+
+Requirements:
+- Start Instagram connection from the frontend.
+- Redirect to Meta OAuth.
+- Handle callback on the backend.
+- Store tokens securely server-side only.
+- Store connected Instagram account metadata.
+- Never expose tokens to frontend.
+- Add reconnect flow for expired/revoked permissions.
+
+Permissions:
+Use the minimum required permissions and document them clearly in README.
+Do not request unnecessary permissions.
+
+9. Instagram limitations handling
+
+Because Instagram API access depends on account type, permissions, and Meta app review, implement graceful fallback states.
+
+If Instagram integration is not fully configured, show:
+- “Instagram integration is not fully configured yet.”
+- “Connect a professional Instagram account and complete Meta app setup to receive supported Instagram events.”
+- “Personal Instagram app notifications cannot be imported directly unless supported by official APIs.”
+
+Do not falsely claim that the app can read every Instagram mobile notification.
+Do not implement notification scraping.
+Do not ask for the user’s Instagram password.
+
+10. Mock Instagram events for development
+
+Add development buttons:
+- “Simulate Instagram DM”
+- “Simulate Instagram comment”
+- “Simulate Instagram mention”
+- “Simulate Instagram insight alert”
+
+These should:
+- Create a fake Instagram notification
+- Show it in the unified notification feed
+- Increase the Instagram account badge count
+- Trigger in-app toast
+- Trigger web/mobile push notification if permission is granted
+
+11. Unified notification dashboard update
+
+Update the dashboard so Instagram appears alongside Gmail and Outlook.
+
+Notification sources should now include:
+- Gmail
+- Outlook
+- Instagram
+
+Dashboard requirements:
+- Global notification count includes Instagram.
+- Source filter includes Instagram.
+- Account badges support Instagram.
+- New Instagram events should appear in real-time.
+- Clicking an Instagram notification opens the Instagram notification detail page.
+- If a direct Instagram link is available, show “Open in Instagram”.
+
+12. Notification design update
+
+Make all new notifications visually stronger:
+- New/unseen notifications should have red badges.
+- Provider-specific icons should be clear.
+- Instagram notifications should use Instagram-style iconography but still fit the YourRadar design system.
+- The main brand should stay Deep Navy + Radar Green.
+- Red should be reserved for urgent/new notification badges.
+
+13. README update
+
+Update README with:
+- Branding setup
+- How to replace/update the logo
+- PWA setup
+- Push notification setup
+- Instagram API setup
+- Meta developer app setup
+- Instagram webhook setup
+- Required environment variables
+- Known Instagram limitations
+- Development mock mode instructions
+
+14. Final acceptance criteria
+
+The feature is complete when:
+- The app opens with a custom animated YourRadar radar loading screen.
+- The attached logo appears creatively inside the loading animation and app UI.
+- The loading percentage animates from 0 to 100.
+- “powered by you group” appears at the bottom of the loading screen.
+- The dashboard loads smoothly after the startup animation.
+- Instagram appears as a connectable source.
+- Mock Instagram notifications work immediately in development mode.
+- Instagram notifications appear in the unified feed.
+- Instagram notifications trigger in-app and push notifications.
+- The implementation uses only official Meta/Instagram API-compatible architecture.
+- The app clearly explains Instagram API limitations and does not promise unsupported personal notification scraping.
