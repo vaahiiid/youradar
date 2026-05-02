@@ -66,7 +66,12 @@ export default function NotificationsScreen() {
   const bottomPad = (Platform.OS === "web" ? 100 : insets.bottom + 80) + 24;
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.background }]}>
+    <View
+      style={[
+        styles.root,
+        { backgroundColor: colors.background, paddingBottom: 0 },
+      ]}
+    >
       <ScreenHeader
         title="Alerts"
         subtitle={
@@ -121,6 +126,7 @@ export default function NotificationsScreen() {
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.filtersRow}
+        style={styles.filtersScroll}
       >
         {filters.map((f) => {
           const active = filter === f.id;
@@ -192,7 +198,11 @@ export default function NotificationsScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
+  root: { flex: 1, width: "100%", maxWidth: "100%", overflow: "hidden" },
+  filtersScroll: {
+    flexGrow: 0,
+    maxWidth: "100%",
+  },
   filtersRow: {
     flexDirection: "row",
     gap: 8,
@@ -203,6 +213,7 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   chip: {
+    flexShrink: 0,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 999,
@@ -244,9 +255,13 @@ const styles = StyleSheet.create({
     // Hug content but cap so the pill never spans the full screen on
     // wider mobile widths.
     alignSelf: "flex-start",
-    maxWidth: "80%",
+    maxWidth: "90%",
+    minWidth: 0,
+    flexShrink: 1,
   },
   scanText: {
+    flexShrink: 1,
+    minWidth: 0,
     fontFamily: "Inter_500Medium",
     fontSize: 12,
     letterSpacing: 0.3,

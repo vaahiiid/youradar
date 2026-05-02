@@ -256,6 +256,10 @@ export function NotificationCard({ item, onPress }: NotificationCardProps) {
 
 const styles = StyleSheet.create({
   card: {
+    width: "100%",
+    maxWidth: "100%",
+    minWidth: 0,
+    overflow: "hidden",
     borderRadius: 18,
     padding: 14,
     marginBottom: 10,
