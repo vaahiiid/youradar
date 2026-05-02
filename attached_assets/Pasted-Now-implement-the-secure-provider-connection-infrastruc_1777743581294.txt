@@ -1,0 +1,232 @@
+Now implement the secure provider connection infrastructure with strict privacy and encryption.
+
+Do not rebuild the app. Extend the current YourRadar architecture.
+
+CRITICAL PRINCIPLE:
+User data must be private-by-design.
+All sensitive data must be encrypted.
+Only the user must be able to see their data.
+Admins, developers, or database access must NOT be able to read user data in plain form.
+
+--------------------------------------------------
+1. Secure connection model (OAuth only)
+--------------------------------------------------
+
+Users must connect external providers through official OAuth / API flows only.
+
+- Never ask for Gmail, Outlook, Instagram, or any provider passwords
+- Redirect users to provider login pages
+- After consent, redirect back to YourRadar
+- Exchange tokens server-side only
+
+--------------------------------------------------
+2. Zero-trust data architecture (VERY IMPORTANT)
+--------------------------------------------------
+
+Implement a zero-trust model:
+
+- Treat backend and database as untrusted for user content
+- Sensitive user data must be encrypted before storage
+- Only decrypted at runtime for the authenticated user session
+
+Admins must NOT be able to:
+- read email subjects
+- read message previews
+- read sender names
+- read account identifiers in plain text
+- read tokens in plain text
+
+--------------------------------------------------
+3. Encryption requirements (MANDATORY)
+--------------------------------------------------
+
+Implement field-level encryption.
+
+Encrypt before saving to DB:
+
+- provider access tokens
+- refresh tokens
+- account identifiers (email, username)
+- sender names
+- message titles
+- message snippets
+- delivery tracking numbers
+- any user-identifiable content
+
+Use:
+- AES-256-GCM (or equivalent modern authenticated encryption)
+- unique IV per record
+- include auth tag
+- never reuse IV
+
+Store:
+- encrypted value
+- IV
+- auth tag
+
+Do NOT store plaintext copies.
+
+--------------------------------------------------
+4. Key management (CRITICAL)
+--------------------------------------------------
+
+Implement proper key handling:
+
+- Use a master encryption key from environment variables:
+  ENCRYPTION_MASTER_KEY
+
+- Derive per-user keys using a KDF (e.g. HKDF or PBKDF2):
+  userKey = derive(masterKey, userId)
+
+- Optionally support per-field or per-record salts
+
+- Never hardcode keys
+- Never log keys
+- Never send keys to frontend
+
+--------------------------------------------------
+5. Decryption rules
+--------------------------------------------------
+
+Data must be decrypted ONLY when:
+
+- user is authenticated
+- user owns the data (userId matches)
+- data is being displayed in UI or used for notification rendering
+
+Never decrypt:
+- in logs
+- for admin dashboards
+- for analytics
+- for background jobs unless strictly required
+
+--------------------------------------------------
+6. Token security
+--------------------------------------------------
+
+- Store OAuth tokens encrypted
+- Never expose tokens to frontend
+- Refresh tokens server-side only
+- Delete tokens on disconnect
+- Mask tokens in logs
+
+--------------------------------------------------
+7. Admin restrictions
+--------------------------------------------------
+
+Even if an admin accesses the database:
+
+- all sensitive fields must appear encrypted
+- no plaintext data must be visible
+- no admin UI should show decrypted user data
+
+Add this rule:
+“Admins cannot read user notification content or connected account details.”
+
+--------------------------------------------------
+8. Notification storage model
+--------------------------------------------------
+
+Notifications must be linked to connected sources.
+
+Sensitive fields must be encrypted:
+- title
+- snippet
+- senderName
+- senderIdentifier
+- accountIdentifier
+
+Non-sensitive fields can remain plaintext:
+- provider
+- timestamps
+- status flags
+
+--------------------------------------------------
+9. API response security
+--------------------------------------------------
+
+- Decrypt data only inside backend
+- Send decrypted data only to the authenticated user
+- Never expose encrypted blobs directly to UI unless necessary
+
+--------------------------------------------------
+10. Logging rules
+--------------------------------------------------
+
+Do NOT log:
+- email subjects
+- message content
+- sender names
+- tokens
+- decrypted values
+
+Logs should only include:
+- IDs
+- timestamps
+- provider types
+- status flags
+
+--------------------------------------------------
+11. Privacy UX (user trust)
+--------------------------------------------------
+
+Add a clear message in UI:
+
+“YourRadar uses end-to-end inspired encryption principles. Your connected data is encrypted and only visible to you. Even system administrators cannot read your private notifications.”
+
+Also:
+
+“We never store your passwords. All connections use secure provider authentication.”
+
+--------------------------------------------------
+12. Multiple accounts support
+--------------------------------------------------
+
+Ensure encryption works per connected source:
+
+- user can connect multiple Gmail accounts
+- each account has separate encrypted identity
+- each notification is tied to a specific encrypted source
+
+--------------------------------------------------
+13. Webhooks and background jobs
+--------------------------------------------------
+
+When receiving provider events:
+
+- fetch event data
+- encrypt sensitive fields immediately
+- store encrypted
+- only decrypt when sending to user session or push notification
+
+--------------------------------------------------
+14. Environment variables
+--------------------------------------------------
+
+Add:
+
+ENCRYPTION_MASTER_KEY
+TOKEN_ENCRYPTION_KEY
+
+Ensure keys are:
+- strong (32 bytes minimum)
+- not exposed in frontend
+- not committed to repo
+
+--------------------------------------------------
+15. Acceptance criteria (STRICT)
+--------------------------------------------------
+
+This feature is complete only when:
+
+- No sensitive user data exists in plaintext in database
+- Tokens are encrypted
+- Email subjects/snippets are encrypted
+- Account identifiers are encrypted
+- Decryption only happens for the correct authenticated user
+- Admin cannot read user data from DB or logs
+- Logs contain no sensitive content
+- App still functions normally with encrypted storage
+- Multiple accounts per provider still work correctly
+
+This is a security-critical requirement. Do not simplify or skip encryption.
