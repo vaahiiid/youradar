@@ -1,5 +1,4 @@
 uploads = []
-outputs = []
 
 [[generated]]
 id = "BmyMtGMvWz2R4RcMYfSoC"
@@ -12,3 +11,9 @@ id = "dJcIRJEpzQL9b9SCWfhne"
 uri = "file://artifacts/mobile/assets/images/logo-mark.png"
 type = "image"
 title = "yourradar logo mark transparent"
+
+[[outputs]]
+id = "O3zRvbJVsrik-D81oMeZF"
+uri = "file://PROVIDER_SETUP.md"
+type = "text"
+title = "YourRadar — Provider Credentials Setup Checklist"
