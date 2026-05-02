@@ -317,6 +317,33 @@ export default function SettingsScreen() {
           </Text>
           <View
             style={[
+              styles.privacyNote,
+              {
+                backgroundColor: colors.secondary,
+                borderColor: colors.border,
+              },
+            ]}
+          >
+            <Feather
+              name="info"
+              size={13}
+              color={colors.mutedForeground}
+              style={{ marginTop: 2 }}
+            />
+            <Text
+              style={[
+                styles.privacyNoteText,
+                { color: colors.mutedForeground },
+              ]}
+            >
+              Note: this is not full end-to-end encryption yet. The backend
+              decrypts your data at runtime only for you, the authenticated
+              owner. Client-side / true end-to-end encryption is on the
+              roadmap.
+            </Text>
+          </View>
+          <View
+            style={[
               styles.privacyDetail,
               { borderTopColor: colors.border },
             ]}
@@ -642,6 +669,19 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_500Medium",
     fontSize: 13,
     lineHeight: 18,
+  },
+  privacyNote: {
+    flexDirection: "row",
+    gap: 8,
+    padding: 10,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  privacyNoteText: {
+    flex: 1,
+    fontFamily: "Inter_500Medium",
+    fontSize: 12,
+    lineHeight: 17,
   },
   privacyDetail: {
     borderTopWidth: StyleSheet.hairlineWidth,

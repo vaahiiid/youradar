@@ -64,7 +64,9 @@ Delivery accounts store `deliveryDetails` including `trackingNumber`, `label`, `
 The system emphasizes privacy by exclusively using official APIs (Google, Microsoft, Meta, etc.) for integrations. It never requests user passwords, and tokens are securely managed on the server. The design explicitly avoids scraping or mirroring personal app notifications not exposed by official APIs.
 
 ### Zero-Trust Field-Level Encryption
-All sensitive fields are encrypted at rest with AES-256-GCM using per-user keys, so no operator can read user content directly from the database.
+YourRadar encrypts sensitive data at rest using field-level encryption with AES-256-GCM and per-user keys. Admins cannot read user data directly from the database or logs.
+
+**Important honest scope note:** this is **not full end-to-end encryption yet**. The backend decrypts data at runtime only for the authenticated owner. A user must trust the running server while their request is in flight. True client-side / end-to-end encryption is tracked as a roadmap item below.
 
 - **Key derivation:** Two independent master keys (`ENCRYPTION_MASTER_KEY` for content, `TOKEN_ENCRYPTION_KEY` for OAuth tokens) are stored as 32-byte base64 secrets. Per-user, per-domain keys are derived via HKDF-SHA256 with a userId-bound salt and a domain-separated `info` string. Derived key buffers are explicitly zeroized after use.
 - **Encrypted payload shape:** Sensitive columns are stored as `jsonb { v, ct, iv, tag }` blobs. Each record uses a fresh random 12-byte IV and a 16-byte GCM auth tag. Decryption is only possible by the owning user's session.
@@ -72,7 +74,12 @@ All sensitive fields are encrypted at rest with AES-256-GCM using per-user keys,
 - **Authorization model:** Every read and write filters by `req.userId` enforced by middleware (`x-user-id` header today, real session/OAuth integration later). Cross-tenant access returns empty results or 404; ownership is re-verified on every mutation; `source_id` ownership is checked before notifications can attach to it.
 - **Logging discipline:** Pino is configured with `redact` paths covering tokens, decrypted titles/snippets, account identifiers, and the `x-user-id` header. Route handlers log only opaque IDs, provider, kind, and boolean presence flags — never decrypted content. OAuth tokens are masked via `maskToken()` when referenced.
 - **Hardening:** Express enforces a 128 KB JSON body limit (32 KB for url-encoded) to bound abuse; route validators reject oversized strings, unknown providers/kinds, and short/invalid user IDs (401).
-- **Public privacy notice:** `GET /api/privacy` returns the user-facing encryption summary, also surfaced in the mobile **Privacy & Security** card on the Settings screen.
+- **Public privacy notice:** `GET /api/privacy` returns the user-facing encryption summary, also surfaced in the mobile **Privacy & Security** card on the Settings screen, including the honest "not full end-to-end yet" disclosure.
+
+### Roadmap
+- **Client-side encryption / true end-to-end encryption mode.** Move encryption and decryption into the user's device so the server only ever sees ciphertext. The backend would never hold the decryption key, even transiently, and notification content could not be read by the running server — only by the user's authenticated client. This is a significant architectural change (key management, search/sort over ciphertext, recovery flows) and is the natural successor to the current at-rest field-level encryption.
+- Real session-based authentication (replacing the placeholder `x-user-id` header) integrated with provider OAuth flows.
+- Server-side OAuth token refresh using the encrypted refresh tokens.
 
 ### Development Mock Mode
 A development mock mode is included, allowing for instant simulation of fake notifications across all 16 providers. This mode helps in testing UI/UX for various notification types and account states without requiring actual API credentials or external calls. It mints synthetic demo accounts if no real ones are connected, ensuring immediate visibility in the dashboard.
