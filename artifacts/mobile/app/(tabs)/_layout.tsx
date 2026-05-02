@@ -13,6 +13,7 @@ import React from "react";
 import { Platform, StyleSheet, View } from "react-native";
 
 import { Badge } from "@/components/Badge";
+import { CustomTabBar } from "@/components/CustomTabBar";
 import { useInbox } from "@/context/InboxContext";
 import { useColors } from "@/hooks/useColors";
 
@@ -51,6 +52,7 @@ function ClassicTabLayout() {
 
   return (
     <Tabs
+      tabBar={isWeb ? (props) => <CustomTabBar {...props} /> : undefined}
       screenOptions={{
         tabBarActiveTintColor: colors.radarBlue,
         tabBarInactiveTintColor: colors.coolGrey,
@@ -63,10 +65,9 @@ function ClassicTabLayout() {
         tabBarStyle: {
           position: "absolute",
           backgroundColor: isIOS ? "transparent" : colors.background,
-          borderTopWidth: isWeb ? 1 : 0.5,
+          borderTopWidth: 0.5,
           borderTopColor: colors.border,
           elevation: 0,
-          ...(isWeb ? { height: 64 } : {}),
         },
         tabBarItemStyle: {
           backgroundColor: "transparent",

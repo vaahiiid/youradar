@@ -1,0 +1,176 @@
+The issue is still NOT fixed. The previous changes did not solve the real root cause.
+
+Please stop applying surface-level style patches and debug the actual layout hierarchy.
+
+From the screenshot, the main remaining problems are:
+1. The selected bottom tab still shows a large blue rectangle/border.
+2. The Alerts content is still being visually constrained/overlapped by the bottom nav.
+3. The Alerts cards still look too wide and too close to the screen edges.
+4. The filter row still feels clipped at the right side.
+5. The screen does not look like a polished production mobile UI.
+
+Important:
+This appears to be a React Native / Expo Router bottom tab issue, not only a CSS issue.
+
+Do the following:
+
+1. Find the real source of the blue rectangle in the bottom nav
+
+Search the entire codebase for:
+- tabBarItemStyle
+- tabBarActiveTintColor
+- tabBarStyle
+- tabBarButton
+- borderWidth
+- borderColor
+- backgroundColor
+- activeBackgroundColor
+- focus
+- selected
+- role="tab"
+- Pressable
+- TouchableOpacity
+- Tabs.Screen
+- app/(tabs)
+- _layout.tsx
+- BottomTabBar
+- custom tab bar component
+
+The selected Alerts tab is still rendering a large blue bordered rectangle. Remove the source of this completely.
+
+The active bottom tab should ONLY show:
+- blue icon
+- blue label
+- small red badge if needed
+
+No border.
+No rectangle.
+No blue outline.
+No large active background.
+
+If Expo Tabs or React Navigation is generating this, override it properly with a custom tabBarButton or custom tabBar.
+
+2. Replace the bottom tab with a custom clean mobile bottom nav if needed
+
+If the default tab navigator keeps creating the blue rectangle, build a custom bottom navigation component.
+
+Requirements:
+- Fixed at bottom
+- Height around 72px including safe area
+- White background
+- Top border #E5E7EB
+- Four items: Radar, Alerts, Sources, Settings
+- Active item:
+  - icon colour #2F80ED
+  - label colour #2F80ED
+  - no box border
+  - no full rectangle
+- Inactive item:
+  - icon colour #667085
+  - label colour #667085
+- Red badge on Alerts icon only
+- Support iPhone safe area
+
+3. Fix screen safe area and scroll structure
+
+Alerts screen should use this structure:
+
+SafeAreaView
+  View screenContainer
+    Header
+    ScanningPill
+    FilterScrollView
+    FlatList or ScrollView for alerts
+
+The alerts list must have:
+contentContainerStyle:
+- paddingHorizontal: 16
+- paddingTop: 8
+- paddingBottom: 120
+
+Do not put cards outside the padded list container.
+
+4. Use FlatList instead of nested ScrollViews if possible
+
+If Alerts uses nested ScrollView inside another ScrollView, fix it.
+
+Preferred:
+- Header can be ListHeaderComponent
+- Alerts rendered by FlatList
+- contentContainerStyle handles padding
+
+This will prevent layout clipping and bottom nav overlap.
+
+5. Fix AlertCard visual size
+
+The card should look smaller and cleaner.
+
+Use:
+- marginHorizontal: 0 because parent list already has paddingHorizontal 16
+- padding: 16
+- borderRadius: 20
+- borderWidth: 1
+- borderColor unread: rgba(47, 128, 237, 0.55)
+- borderColor read: #E5E7EB
+- shadow subtle only
+- no thick blue outline
+- no extra outer wrapper border
+
+The screenshot still looks like the blue outline is too dominant. Make it softer.
+
+6. Fix filter row
+
+The filter row should be inside the same screen width and scroll horizontally.
+
+Use:
+- horizontal ScrollView
+- showsHorizontalScrollIndicator: false
+- contentContainerStyle:
+  - paddingHorizontal: 16
+  - paddingRight: 32
+  - gap: 8
+
+Each chip:
+- flexShrink: 0
+- height around 32
+- paddingHorizontal 18
+- borderRadius 999
+
+Make sure Instagram is fully reachable and not visually clipped.
+
+7. Remove any device-frame or preview wrapper interference
+
+If the app is being rendered inside an iPhone mockup/device frame component, check that wrapper.
+
+The inner app screen must not have:
+- fixed width larger than available area
+- negative margins
+- transform scale that affects layout
+- absolute children exceeding width
+- overflow visible
+
+The problem may be coming from the phone preview wrapper, not the Alerts screen itself.
+
+8. Verify on real responsive widths
+
+Test and visually inspect:
+- 320px
+- 375px
+- 390px
+- 430px
+
+Do not say fixed unless these are actually verified.
+
+9. Final acceptance criteria
+
+This task is complete only when:
+- The selected bottom nav tab has no blue rectangle or border.
+- Alerts tab active state is only blue icon/text.
+- Cards sit cleanly inside 16px screen padding.
+- No card touches the phone edge.
+- Filter chips scroll smoothly and are not clipped.
+- The last alert card is fully visible above bottom nav.
+- No horizontal overflow exists.
+- The result matches a polished mobile app UI.
+
+Please identify and fix the actual component causing the bottom nav rectangle and layout clipping. Do not only modify global CSS.
