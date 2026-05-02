@@ -1,0 +1,169 @@
+The mobile UI issue is still not fixed. Please debug and fix it properly, not visually patch it.
+
+Main problem:
+The Alerts screen still has horizontal overflow and broken mobile layout. Some cards/tabs are wider than the viewport, and the bottom navigation still interferes with content.
+
+Do the following exact fixes:
+
+1. Global CSS hard fix
+
+Add or verify:
+
+html,
+body,
+#root {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+Do not use 100vw for page containers. Use width: 100%.
+
+2. App shell fix
+
+The mobile page wrapper must be:
+
+width: 100%;
+max-width: 100%;
+min-height: 100dvh;
+overflow-x: hidden;
+
+If there is an iPhone mockup/device frame wrapper, make sure the actual app content inside it does not exceed the inner screen width.
+
+3. Alerts page container
+
+The Alerts page root must use:
+
+width: 100%;
+max-width: 100%;
+padding-left: 16px;
+padding-right: 16px;
+padding-bottom: calc(112px + env(safe-area-inset-bottom));
+overflow-x: hidden;
+
+Do not place alert cards directly inside a full-width container without padding.
+
+4. Filter tabs row
+
+The filter row must be horizontally scrollable, not overflowing the page.
+
+Use:
+
+display: flex;
+gap: 8px;
+overflow-x: auto;
+overflow-y: hidden;
+max-width: 100%;
+padding-bottom: 8px;
+padding-right: 24px;
+-webkit-overflow-scrolling: touch;
+
+Each tab should use:
+
+flex: 0 0 auto;
+white-space: nowrap;
+
+Do not allow the tab row to expand the page width.
+
+5. Alert cards
+
+Every alert card must use:
+
+width: 100%;
+max-width: 100%;
+min-width: 0;
+overflow: hidden;
+
+Inside the card, all text containers must use:
+
+min-width: 0;
+
+Long text should use wrapping or truncation:
+
+overflow-wrap: anywhere;
+
+Badges must not force overflow:
+- use flex-wrap: wrap;
+- max-width: 100%;
+- compact padding
+- smaller font size
+
+6. Remove fixed widths
+
+Search the codebase for:
+- width: 100vw
+- min-width
+- fixed pixel widths larger than mobile
+- translateX values
+- negative margins
+- absolute positioned elements outside viewport
+
+Replace anything causing overflow.
+
+Especially check:
+- Alerts page
+- AlertCard component
+- FilterTabs component
+- BottomNav component
+- Phone/device preview wrapper if present
+
+7. Bottom nav fix
+
+The bottom nav should be:
+
+position: fixed;
+left: 0;
+right: 0;
+bottom: 0;
+width: 100%;
+max-width: 100%;
+padding-bottom: env(safe-area-inset-bottom);
+
+The page content must have enough bottom padding:
+
+padding-bottom: calc(120px + env(safe-area-inset-bottom));
+
+The selected tab must not create a huge blue bordered rectangle. Replace it with:
+- blue icon/text
+- small top indicator line or small pill background
+- no large border box
+
+8. Scanning pill fix
+
+The “Scanning new signals...” pill must not overflow.
+
+Use:
+
+max-width: 100%;
+width: fit-content;
+min-width: 0;
+
+On small screens:
+- allow text truncation
+- keep icon small
+- avoid fixed width
+
+9. Test acceptance
+
+After changes, test the app at:
+- 320px width
+- 375px width
+- 390px width
+- 430px width
+
+Acceptance criteria:
+- No horizontal scrollbar.
+- No content clipped on the right.
+- Instagram filter tab is fully reachable by horizontal scroll.
+- Alert cards fit within screen padding.
+- Last alert card is visible above bottom nav.
+- Selected bottom nav item no longer shows a huge blue rectangle.
+- Main dashboard has no Simulate Signal section unless Developer/Test Mode is enabled.
+
+This is a bug fix. Do not redesign the whole app. Fix the layout root cause.
