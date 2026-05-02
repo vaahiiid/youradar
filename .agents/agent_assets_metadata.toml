@@ -1,0 +1,8 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "BmyMtGMvWz2R4RcMYfSoC"
+uri = "file://artifacts/mobile/assets/images/icon.png"
+type = "image"
+title = "inbox pulse icon"
