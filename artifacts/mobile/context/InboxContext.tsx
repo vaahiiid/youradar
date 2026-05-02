@@ -486,6 +486,7 @@ const DEFAULT_SETTINGS: SettingsState = {
   inAppToastsEnabled: true,
   soundsEnabled: false,
   reducedMotion: false,
+  testModeEnabled: false,
 };
 
 function pickFrom<T>(list: T[]): T {

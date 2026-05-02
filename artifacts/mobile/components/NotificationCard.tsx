@@ -112,8 +112,10 @@ export function NotificationCard({ item, onPress }: NotificationCardProps) {
         styles.card,
         {
           backgroundColor: colors.card,
+          // Subtle border for read alerts, single-pixel accent border for
+          // unread — avoids the previous heavy double-pixel blue ring.
           borderColor: item.isSeen ? colors.border : colors.radarBlue,
-          borderWidth: item.isSeen ? 1 : 1.5,
+          borderWidth: 1,
           opacity: pressed ? 0.85 : 1,
         },
       ]}

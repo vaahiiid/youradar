@@ -226,50 +226,64 @@ export default function DashboardScreen() {
           </View>
         ) : null}
 
-        <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
-            Simulate signal
-          </Text>
-          <Text style={[styles.sectionHint, { color: colors.mutedForeground }]}>
-            Test mode
-          </Text>
-        </View>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.chipsScroll}
-        >
-          {simChips.map((chip) => {
-            const tint =
-              chip.provider === "instagram"
-                ? colors.instagram
-                : chip.provider === "tiktok"
-                  ? colors.brandNavy
-                  : (colors as unknown as Record<string, string>)[chip.provider] ??
-                    colors.radarBlue;
-            return (
-              <Pressable
-                key={chip.id}
-                onPress={() => fire(chip.provider, chip.instagramKind)}
-                style={({ pressed }) => [
-                  styles.simChip,
-                  {
-                    backgroundColor: colors.card,
-                    borderColor: colors.border,
-                    opacity: pressed ? 0.85 : 1,
-                  },
-                ]}
+        {settings.testModeEnabled ? (
+          <>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
+                Simulate signal
+              </Text>
+              <Text
+                style={[styles.sectionHint, { color: colors.mutedForeground }]}
               >
-                <View style={[styles.simChipIcon, { backgroundColor: tint }]}>
-                  <Feather name="zap" size={11} color="#FFFFFF" />
-                </View>
-                <Text style={[styles.simChipLabel, { color: colors.foreground }]}>
-                  {chip.label}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
+                Test mode
+              </Text>
+            </View>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.chipsScroll}
+            >
+              {simChips.map((chip) => {
+                const tint =
+                  chip.provider === "instagram"
+                    ? colors.instagram
+                    : chip.provider === "tiktok"
+                      ? colors.brandNavy
+                      : (colors as unknown as Record<string, string>)[
+                          chip.provider
+                        ] ?? colors.radarBlue;
+                return (
+                  <Pressable
+                    key={chip.id}
+                    onPress={() => fire(chip.provider, chip.instagramKind)}
+                    style={({ pressed }) => [
+                      styles.simChip,
+                      {
+                        backgroundColor: colors.card,
+                        borderColor: colors.border,
+                        opacity: pressed ? 0.85 : 1,
+                      },
+                    ]}
+                  >
+                    <View
+                      style={[styles.simChipIcon, { backgroundColor: tint }]}
+                    >
+                      <Feather name="zap" size={11} color="#FFFFFF" />
+                    </View>
+                    <Text
+                      style={[
+                        styles.simChipLabel,
+                        { color: colors.foreground },
+                      ]}
+                    >
+                      {chip.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </>
+        ) : null}
 
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, { color: colors.foreground }]}>

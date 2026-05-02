@@ -93,6 +93,8 @@ export interface SettingsState {
   inAppToastsEnabled: boolean;
   soundsEnabled: boolean;
   reducedMotion: boolean;
+  /** When true, exposes test/simulation tools on the dashboard and in Settings. */
+  testModeEnabled: boolean;
 }
 
 export const PROVIDER_ORDER: Provider[] = [

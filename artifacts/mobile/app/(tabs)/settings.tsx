@@ -19,7 +19,55 @@ import { ScreenHeader } from "@/components/ScreenHeader";
 import { Toast } from "@/components/Toast";
 import { useInbox } from "@/context/InboxContext";
 import { useColors } from "@/hooks/useColors";
-import type { EmailNotification } from "@/types";
+import type {
+  EmailNotification,
+  InstagramEventKind,
+  Provider,
+} from "@/types";
+
+interface SimChip {
+  id: string;
+  label: string;
+  provider: Provider;
+  instagramKind?: InstagramEventKind;
+}
+
+const SIM_CHIPS: SimChip[] = [
+  { id: "gmail", label: "Gmail", provider: "gmail" },
+  { id: "outlook", label: "Outlook", provider: "outlook" },
+  { id: "yahoo", label: "Yahoo", provider: "yahoo" },
+  { id: "aol", label: "AOL", provider: "aol" },
+  { id: "hotmail", label: "Hotmail", provider: "hotmail" },
+  { id: "ig-dm", label: "IG · DM", provider: "instagram", instagramKind: "dm" },
+  {
+    id: "ig-comment",
+    label: "IG · Comment",
+    provider: "instagram",
+    instagramKind: "comment",
+  },
+  {
+    id: "ig-mention",
+    label: "IG · Mention",
+    provider: "instagram",
+    instagramKind: "mention",
+  },
+  {
+    id: "ig-insight",
+    label: "IG · Insight",
+    provider: "instagram",
+    instagramKind: "insight",
+  },
+  { id: "linkedin", label: "LinkedIn", provider: "linkedin" },
+  { id: "facebook", label: "Facebook", provider: "facebook" },
+  { id: "telegram", label: "Telegram", provider: "telegram" },
+  { id: "whatsapp", label: "WhatsApp", provider: "whatsapp" },
+  { id: "tiktok", label: "TikTok", provider: "tiktok" },
+  { id: "x", label: "X", provider: "x" },
+  { id: "evri", label: "Evri", provider: "evri" },
+  { id: "dpd", label: "DPD", provider: "dpd" },
+  { id: "royalmail", label: "Royal Mail", provider: "royalmail" },
+  { id: "amazon", label: "Amazon", provider: "amazon" },
+];
 
 export default function SettingsScreen() {
   const colors = useColors();
@@ -47,6 +95,20 @@ export default function SettingsScreen() {
     const provider = accounts[0]!.provider;
     const created = simulateIncoming(provider, accounts[0]!.id);
     if (created) setToast(created);
+  };
+
+  const fireChip = (chip: SimChip) => {
+    if (Platform.OS !== "web") {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
+        () => undefined,
+      );
+    }
+    const created = simulateIncoming(
+      chip.provider,
+      undefined,
+      chip.instagramKind,
+    );
+    if (created && settings.inAppToastsEnabled) setToast(created);
   };
 
   const confirmClear = () => {
@@ -135,6 +197,90 @@ export default function SettingsScreen() {
             disabled={totalCount === 0}
           />
         </Group>
+
+        <SectionTitle>Developer · Test mode</SectionTitle>
+        <Group>
+          <Row
+            icon="sliders"
+            title="Enable test mode"
+            subtitle="Show signal-simulation tools on the dashboard and below"
+          >
+            <Switch
+              value={settings.testModeEnabled}
+              onValueChange={(v) => updateSettings({ testModeEnabled: v })}
+              trackColor={{ true: colors.radarBlue, false: colors.border }}
+              thumbColor="#FFFFFF"
+            />
+          </Row>
+        </Group>
+
+        {settings.testModeEnabled ? (
+          <View
+            style={[
+              styles.devPanel,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+          >
+            <Text
+              style={[styles.devPanelTitle, { color: colors.foreground }]}
+            >
+              Simulate signal
+            </Text>
+            <Text
+              style={[
+                styles.devPanelHint,
+                { color: colors.mutedForeground },
+              ]}
+            >
+              Fire a sample alert from any provider — auto-mints a demo source
+              if you haven't connected one yet.
+            </Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.chipsScroll}
+            >
+              {SIM_CHIPS.map((chip) => {
+                const tint =
+                  chip.provider === "instagram"
+                    ? colors.instagram
+                    : chip.provider === "tiktok"
+                      ? colors.brandNavy
+                      : (colors as unknown as Record<string, string>)[
+                          chip.provider
+                        ] ?? colors.radarBlue;
+                return (
+                  <Pressable
+                    key={chip.id}
+                    onPress={() => fireChip(chip)}
+                    style={({ pressed }) => [
+                      styles.simChip,
+                      {
+                        backgroundColor: colors.background,
+                        borderColor: colors.border,
+                        opacity: pressed ? 0.85 : 1,
+                      },
+                    ]}
+                  >
+                    <View
+                      style={[styles.simChipIcon, { backgroundColor: tint }]}
+                    >
+                      <Feather name="zap" size={11} color="#FFFFFF" />
+                    </View>
+                    <Text
+                      style={[
+                        styles.simChipLabel,
+                        { color: colors.foreground },
+                      ]}
+                    >
+                      {chip.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </View>
+        ) : null}
 
         <SectionTitle>About</SectionTitle>
         <Group>
@@ -401,5 +547,46 @@ const styles = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 1.2,
     textTransform: "lowercase",
+  },
+  devPanel: {
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: 14,
+    marginBottom: 18,
+  },
+  devPanelTitle: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  devPanelHint: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 12,
+    lineHeight: 17,
+    marginBottom: 12,
+  },
+  chipsScroll: {
+    gap: 8,
+    paddingRight: 8,
+  },
+  simChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  simChipIcon: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  simChipLabel: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 13,
   },
 });

@@ -196,7 +196,10 @@ const styles = StyleSheet.create({
   filtersRow: {
     flexDirection: "row",
     gap: 8,
-    paddingHorizontal: 20,
+    paddingLeft: 20,
+    // Add extra right padding so the last filter chip is fully visible
+    // and not clipped by the screen edge while horizontally scrolling.
+    paddingRight: 28,
     paddingBottom: 12,
   },
   chip: {
@@ -238,7 +241,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginHorizontal: 20,
     marginBottom: 12,
+    // Hug content but cap so the pill never spans the full screen on
+    // wider mobile widths.
     alignSelf: "flex-start",
+    maxWidth: "80%",
   },
   scanText: {
     fontFamily: "Inter_500Medium",
