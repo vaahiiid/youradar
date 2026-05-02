@@ -26,15 +26,18 @@ export function RadarPulse({
 
   useEffect(() => {
     if (reducedMotion) return;
-    const sweepLoop = Animated.loop(
-      Animated.timing(sweep, {
-        toValue: 1,
-        duration: 3200,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      }),
-    );
-    sweepLoop.start();
+
+    const sweepLoop = showSweep
+      ? Animated.loop(
+          Animated.timing(sweep, {
+            toValue: 1,
+            duration: 3200,
+            easing: Easing.linear,
+            useNativeDriver: true,
+          }),
+        )
+      : null;
+    sweepLoop?.start();
 
     const ringLoops = ringAnims.map((anim, i) =>
       Animated.loop(
@@ -57,10 +60,10 @@ export function RadarPulse({
     ringLoops.forEach((l) => l.start());
 
     return () => {
-      sweepLoop.stop();
+      sweepLoop?.stop();
       ringLoops.forEach((l) => l.stop());
     };
-  }, [reducedMotion, ringAnims, sweep]);
+  }, [reducedMotion, ringAnims, sweep, showSweep]);
 
   const sweepRotate = sweep.interpolate({
     inputRange: [0, 1],

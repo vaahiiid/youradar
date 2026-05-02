@@ -236,7 +236,7 @@ export default function SignUpScreen() {
 
             <View style={styles.footerRow}>
               <Text style={styles.footerText}>Already have an account? </Text>
-              <Link href="/(auth)/sign-in" asChild>
+              <Link href="/(auth)/sign-in-email" asChild>
                 <Pressable>
                   <Text style={styles.linkText}>Sign in</Text>
                 </Pressable>

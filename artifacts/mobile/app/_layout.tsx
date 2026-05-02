@@ -53,17 +53,23 @@ if (Platform.OS === "web" && typeof document !== "undefined") {
         -webkit-text-size-adjust: 100%;
         -webkit-tap-highlight-color: transparent;
       }
-      *:focus, *:focus-visible, *:focus-within { outline: none !important; }
+      /* Suppress non-keyboard focus rings (mouse / touch) but keep
+         visible focus for keyboard users (focus-visible). */
+      *:focus:not(:focus-visible) { outline: none !important; }
       button, [role="button"], a, [tabindex] {
-        outline: none !important;
         -webkit-tap-highlight-color: transparent;
       }
-      button:focus, button:focus-visible, button:focus-within,
-      [role="button"]:focus, [role="button"]:focus-visible, [role="button"]:focus-within,
-      a:focus, a:focus-visible {
+      button:focus:not(:focus-visible),
+      [role="button"]:focus:not(:focus-visible),
+      a:focus:not(:focus-visible) {
         outline: none !important;
         box-shadow: none !important;
-        border-color: inherit;
+      }
+      /* Subtle, brand-aligned keyboard focus ring for a11y */
+      :focus-visible {
+        outline: 2px solid #0097b2 !important;
+        outline-offset: 2px !important;
+        border-radius: 6px;
       }
     `;
     document.head.appendChild(style);

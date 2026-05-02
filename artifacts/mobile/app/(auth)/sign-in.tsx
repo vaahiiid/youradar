@@ -2,21 +2,22 @@ import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  KeyboardAvoidingView,
   Platform,
   Pressable,
+  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
-import { useSignIn, useSSO } from "@clerk/expo";
+import { useSSO } from "@clerk/expo";
 import * as AuthSession from "expo-auth-session";
 import * as WebBrowser from "expo-web-browser";
-import { useRouter, Link } from "expo-router";
+import { Link, useRouter } from "expo-router";
+import Svg, { Path } from "react-native-svg";
 
 import { BrandLogo } from "@/components/BrandLogo";
+import { RadarPulse } from "@/components/RadarPulse";
 import colors from "@/constants/colors";
 
 WebBrowser.maybeCompleteAuthSession();
@@ -31,36 +32,22 @@ function useWarmUpBrowser() {
   }, []);
 }
 
-export default function SignInScreen() {
+function GoogleGlyph({ size = 18 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 48 48">
+      <Path
+        fill="#FFFFFF"
+        d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20c11.045 0 20-8.955 20-20 0-1.341-.138-2.65-.389-3.917z"
+      />
+    </Svg>
+  );
+}
+
+export default function SignInLandingScreen() {
   useWarmUpBrowser();
   const router = useRouter();
-  const { signIn, errors, fetchStatus } = useSignIn();
   const { startSSOFlow } = useSSO();
-
-  const [emailAddress, setEmailAddress] = useState("");
-  const [password, setPassword] = useState("");
   const [oauthLoading, setOauthLoading] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-
-  const handleSubmit = useCallback(async () => {
-    setSubmitError(null);
-    const { error } = await signIn.password({ emailAddress, password });
-    if (error) {
-      setSubmitError(error.message ?? "Could not sign in");
-      return;
-    }
-
-    if (signIn.status === "complete") {
-      await signIn.finalize({
-        navigate: ({ session }) => {
-          if (session?.currentTask) return;
-          router.replace("/(tabs)");
-        },
-      });
-    } else {
-      setSubmitError("Sign-in incomplete. Please try again.");
-    }
-  }, [emailAddress, password, signIn, router]);
 
   const handleGoogle = useCallback(async () => {
     try {
@@ -86,206 +73,229 @@ export default function SignInScreen() {
     }
   }, [startSSOFlow, router]);
 
-  const busy = fetchStatus === "fetching" || oauthLoading;
-
   return (
-    <KeyboardAvoidingView
-      style={styles.flex}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
+    <SafeAreaView style={styles.safe}>
       <ScrollView
         contentContainerStyle={styles.scroll}
-        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
-        <View style={styles.logoWrap}>
-          <BrandLogo height={36} />
+        <View style={styles.topSpacer} />
+
+        {/* Logo with subtle radar pulse behind */}
+        <View style={styles.logoBlock}>
+          <View
+            style={styles.pulseWrap}
+            pointerEvents="none"
+            accessibilityElementsHidden
+            importantForAccessibility="no"
+          >
+            <RadarPulse size={220} rings={2} showSweep={false} />
+          </View>
+          <View style={styles.logoMask}>
+            <BrandLogo height={48} />
+          </View>
         </View>
-        <Text style={styles.title}>Welcome back</Text>
-        <Text style={styles.subtitle}>
-          Sign in to keep your inbox on the radar.
+
+        <Text style={styles.headline}>
+          Stop checking everything. Let everything check in with you.
+        </Text>
+        <Text style={styles.subtext}>
+          Connect your apps. See everything that matters in one place.
         </Text>
 
-        <Pressable
-          style={({ pressed }) => [
-            styles.googleBtn,
-            (busy || pressed) && styles.btnPressed,
-          ]}
-          onPress={handleGoogle}
-          disabled={busy}
-        >
-          {oauthLoading ? (
-            <ActivityIndicator color={colors.light.foreground} />
-          ) : (
-            <Text style={styles.googleBtnText}>Continue with Google</Text>
-          )}
-        </Pressable>
+        <View style={styles.actions}>
+          <Pressable
+            style={({ pressed }) => [
+              styles.primaryBtn,
+              oauthLoading && styles.btnDisabled,
+              pressed && styles.btnPressed,
+            ]}
+            onPress={handleGoogle}
+            disabled={oauthLoading}
+            accessibilityLabel="Continue with Google"
+          >
+            {oauthLoading ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <View style={styles.btnInner}>
+                <GoogleGlyph size={18} />
+                <Text style={styles.primaryBtnText}>Continue with Google</Text>
+              </View>
+            )}
+          </Pressable>
 
-        <View style={styles.divider}>
-          <View style={styles.dividerLine} />
-          <Text style={styles.dividerText}>or</Text>
-          <View style={styles.dividerLine} />
+          <Pressable
+            style={({ pressed }) => [
+              styles.secondaryBtn,
+              pressed && styles.btnPressed,
+            ]}
+            onPress={() => router.push("/(auth)/sign-in-email")}
+            accessibilityLabel="Continue with Email"
+          >
+            <Text style={styles.secondaryBtnText}>Continue with Email</Text>
+          </Pressable>
         </View>
 
-        <Text style={styles.label}>Email</Text>
-        <TextInput
-          style={styles.input}
-          autoCapitalize="none"
-          autoComplete="email"
-          keyboardType="email-address"
-          placeholder="you@example.com"
-          placeholderTextColor={colors.light.mutedForeground}
-          value={emailAddress}
-          onChangeText={setEmailAddress}
-        />
-        {errors.fields.identifier && (
-          <Text style={styles.error}>{errors.fields.identifier.message}</Text>
-        )}
-
-        <Text style={styles.label}>Password</Text>
-        <TextInput
-          style={styles.input}
-          autoComplete="current-password"
-          secureTextEntry
-          placeholder="••••••••"
-          placeholderTextColor={colors.light.mutedForeground}
-          value={password}
-          onChangeText={setPassword}
-        />
-        {errors.fields.password && (
-          <Text style={styles.error}>{errors.fields.password.message}</Text>
-        )}
-        {submitError && <Text style={styles.error}>{submitError}</Text>}
-
-        <Pressable
-          style={({ pressed }) => [
-            styles.primaryBtn,
-            (busy || !emailAddress || !password) && styles.btnDisabled,
-            pressed && styles.btnPressed,
-          ]}
-          onPress={handleSubmit}
-          disabled={busy || !emailAddress || !password}
-        >
-          {fetchStatus === "fetching" ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.primaryBtnText}>Sign in</Text>
-          )}
-        </Pressable>
-
-        <View style={styles.footerRow}>
-          <Text style={styles.footerText}>New to YourRadar? </Text>
+        <View style={styles.linksBlock}>
           <Link href="/(auth)/sign-up" asChild>
-            <Pressable>
-              <Text style={styles.linkText}>Create an account</Text>
+            <Pressable hitSlop={8}>
+              <Text style={styles.primaryLink}>Create an account</Text>
             </Pressable>
           </Link>
+          <View style={styles.altLine}>
+            <Text style={styles.altText}>Already have an account? </Text>
+            <Link href="/(auth)/sign-in-email" asChild>
+              <Pressable hitSlop={8}>
+                <Text style={styles.altLink}>Log in</Text>
+              </Pressable>
+            </Link>
+          </View>
+        </View>
+
+        <View style={styles.flexSpacer} />
+
+        <View style={styles.trust}>
+          <Text style={styles.trustText}>
+            We never ask for your passwords. Your data is encrypted and only visible to you.
+          </Text>
         </View>
       </ScrollView>
-    </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: colors.light.background },
+  safe: { flex: 1, backgroundColor: colors.light.background },
   scroll: {
-    padding: 24,
-    paddingTop: 56,
-    paddingBottom: 48,
+    flexGrow: 1,
+    paddingHorizontal: 28,
+    paddingBottom: 28,
+    alignItems: "center",
   },
-  logoWrap: { alignItems: "flex-start", marginBottom: 32 },
-  title: {
-    fontSize: 28,
-    fontFamily: "Inter_700Bold",
-    color: colors.light.foreground,
-    marginBottom: 6,
+  topSpacer: { height: 24 },
+  logoBlock: {
+    width: 220,
+    height: 220,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 16,
+    marginBottom: 8,
   },
-  subtitle: {
-    fontSize: 15,
-    fontFamily: "Inter_400Regular",
-    color: colors.light.mutedForeground,
-    marginBottom: 28,
+  pulseWrap: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
+    opacity: 0.32,
   },
-  label: {
-    fontSize: 13,
-    fontFamily: "Inter_500Medium",
-    color: colors.light.foreground,
-    marginBottom: 6,
-    marginTop: 12,
-  },
-  input: {
+  logoMask: {
     backgroundColor: "#FFFFFF",
-    borderColor: colors.light.input,
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: Platform.OS === "ios" ? 14 : 10,
-    fontSize: 16,
-    fontFamily: "Inter_400Regular",
-    color: colors.light.foreground,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 999,
   },
-  error: {
-    color: colors.light.destructive,
-    fontSize: 13,
+  headline: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 24,
+    lineHeight: 30,
+    color: colors.light.foreground,
+    textAlign: "center",
+    letterSpacing: -0.5,
+    marginTop: 12,
+    maxWidth: 360,
+  },
+  subtext: {
     fontFamily: "Inter_400Regular",
-    marginTop: 6,
+    fontSize: 15,
+    lineHeight: 22,
+    color: colors.light.mutedForeground,
+    textAlign: "center",
+    marginTop: 12,
+    maxWidth: 320,
+  },
+  actions: {
+    width: "100%",
+    maxWidth: 360,
+    marginTop: 36,
+    gap: 12,
   },
   primaryBtn: {
     backgroundColor: colors.light.primary,
-    borderRadius: 12,
-    paddingVertical: 14,
+    borderRadius: 999,
+    paddingVertical: 16,
     alignItems: "center",
-    marginTop: 24,
+    justifyContent: "center",
+    shadowColor: colors.light.primary,
+    shadowOpacity: 0.18,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
   },
   primaryBtnText: {
     color: colors.light.primaryForeground,
     fontFamily: "Inter_600SemiBold",
     fontSize: 16,
+    letterSpacing: 0.1,
   },
-  btnDisabled: { opacity: 0.5 },
-  btnPressed: { opacity: 0.85 },
-  googleBtn: {
-    backgroundColor: "#FFFFFF",
-    borderColor: colors.light.border,
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingVertical: 14,
+  btnInner: {
+    flexDirection: "row",
     alignItems: "center",
-    marginTop: 8,
+    gap: 10,
   },
-  googleBtnText: {
+  secondaryBtn: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 999,
+    paddingVertical: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: colors.light.border,
+  },
+  secondaryBtnText: {
     color: colors.light.foreground,
     fontFamily: "Inter_600SemiBold",
-    fontSize: 15,
+    fontSize: 16,
+    letterSpacing: 0.1,
   },
-  divider: {
+  btnDisabled: { opacity: 0.6 },
+  btnPressed: { opacity: 0.88 },
+  linksBlock: {
+    width: "100%",
+    alignItems: "center",
+    marginTop: 24,
+    gap: 10,
+  },
+  primaryLink: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 14,
+    color: colors.light.primary,
+    letterSpacing: 0.1,
+    paddingVertical: 4,
+  },
+  altLine: {
     flexDirection: "row",
     alignItems: "center",
-    marginVertical: 18,
   },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: colors.light.border,
-  },
-  dividerText: {
-    marginHorizontal: 12,
-    color: colors.light.mutedForeground,
+  altText: {
     fontFamily: "Inter_400Regular",
     fontSize: 13,
-  },
-  footerRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-    marginTop: 24,
-  },
-  footerText: {
-    fontFamily: "Inter_400Regular",
     color: colors.light.mutedForeground,
-    fontSize: 14,
   },
-  linkText: {
+  altLink: {
     fontFamily: "Inter_600SemiBold",
-    color: colors.light.primary,
-    fontSize: 14,
+    fontSize: 13,
+    color: colors.light.foreground,
+  },
+  flexSpacer: { flexGrow: 1, minHeight: 24 },
+  trust: {
+    width: "100%",
+    maxWidth: 360,
+    paddingTop: 16,
+    alignItems: "center",
+  },
+  trustText: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 12,
+    lineHeight: 17,
+    color: colors.light.mutedForeground,
+    textAlign: "center",
   },
 });
