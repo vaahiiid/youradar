@@ -1,0 +1,257 @@
+Build a full-stack personal life-management web app focused first on unified email notifications from multiple Gmail and Outlook/Microsoft accounts.
+
+The app must be production-oriented, mobile-first, and installable as a PWA. It should let me connect several Gmail accounts and several Outlook/Microsoft accounts using secure OAuth, then show new incoming email notifications both inside the app and as mobile/web push notifications.
+
+Core goal:
+Create a unified email notification dashboard where every newly received email from any connected Gmail or Outlook account appears immediately as a notification. When I click the notification, the app should open the relevant email details inside the app and also provide a button to open the original email in Gmail or Outlook.
+
+Tech stack:
+- Frontend: React + TypeScript
+- Backend: Node.js + Express
+- Database: PostgreSQL
+- ORM: Drizzle or Prisma
+- Authentication: secure user login system
+- PWA: Service Worker, manifest, installable mobile experience
+- Push notifications: Web Push API using VAPID keys
+- API integrations:
+  - Gmail API with OAuth 2.0
+  - Gmail push notifications using Google Cloud Pub/Sub and users.watch
+  - Microsoft Graph OAuth 2.0
+  - Microsoft Graph mail change notifications/webhooks for Outlook messages
+
+Important architecture requirements:
+1. Build the project with a clean modular architecture:
+   - /client for React frontend
+   - /server for backend
+   - /shared for shared types
+   - /server/integrations/gmail
+   - /server/integrations/microsoft
+   - /server/notifications
+   - /server/webhooks
+   - /server/auth
+   - /server/db
+
+2. Store all secrets in environment variables only. Do not hardcode any API keys, client secrets, tokens, or private keys.
+
+Required environment variables:
+- DATABASE_URL
+- SESSION_SECRET
+- APP_BASE_URL
+- GOOGLE_CLIENT_ID
+- GOOGLE_CLIENT_SECRET
+- GOOGLE_REDIRECT_URI
+- GOOGLE_PUBSUB_TOPIC
+- GOOGLE_PUBSUB_VERIFICATION_TOKEN
+- MICROSOFT_CLIENT_ID
+- MICROSOFT_CLIENT_SECRET
+- MICROSOFT_TENANT_ID
+- MICROSOFT_REDIRECT_URI
+- MICROSOFT_WEBHOOK_CLIENT_STATE
+- VAPID_PUBLIC_KEY
+- VAPID_PRIVATE_KEY
+- VAPID_SUBJECT
+
+User features:
+1. Dashboard:
+   - Show all connected email accounts.
+   - Show account type: Gmail or Outlook.
+   - Show connection status.
+   - Show latest sync time.
+   - Show unread/new notification count per account.
+   - Show a global notification bell with total new emails.
+
+2. Connect email accounts:
+   - Add “Connect Gmail account” button.
+   - Add “Connect Outlook account” button.
+   - Support multiple accounts from each provider.
+   - After successful OAuth, save the account connection securely.
+   - Store refresh tokens encrypted or using a secure token storage approach.
+   - Never expose access tokens to the frontend.
+
+3. Unified notifications page:
+   - List new emails from all connected accounts.
+   - Each notification card should show:
+     - Provider icon: Gmail or Outlook
+     - Email account address
+     - Sender name
+     - Sender email
+     - Subject
+     - Short snippet/preview
+     - Received date and time
+     - Read/unread status
+     - Open button
+   - New notifications must be visually obvious with a red badge or red highlight.
+   - When a new email arrives, increase the red badge count next to the relevant account and the global notification bell.
+
+4. In-app real-time updates:
+   - Use WebSocket or Server-Sent Events to push new email events from backend to frontend in real time.
+   - When the backend receives a Gmail Pub/Sub notification or Microsoft Graph webhook notification, fetch the message details, save the notification, and immediately update the frontend.
+
+5. Mobile push notifications:
+   - Make the app installable as a PWA.
+   - Implement Service Worker registration.
+   - Ask the user for notification permission.
+   - Store each device’s push subscription in the database.
+   - When a new email arrives, send a Web Push notification to all active devices for that user.
+   - Push notification title format:
+     “New email from [Sender Name]”
+   - Push notification body format:
+     “[Provider] • [Subject]”
+   - When the user taps the push notification, open the app directly to that email notification detail page.
+
+6. Email detail page:
+   - When the user clicks a notification, open a detail page inside the app.
+   - Show provider, account, sender, subject, date, snippet, and available body preview if safely fetched.
+   - Add “Open in Gmail” or “Open in Outlook” button using the original provider link when available.
+   - Mark the notification as seen inside this app after opening it.
+
+7. Gmail integration:
+   - Implement OAuth flow for Gmail.
+   - Request the minimum required Gmail scopes.
+   - After Gmail account connection, call Gmail users.watch to subscribe to mailbox changes through Google Cloud Pub/Sub.
+   - Create a backend endpoint to receive Pub/Sub push messages.
+   - Validate incoming Pub/Sub messages.
+   - Decode the Gmail notification payload.
+   - Use historyId to fetch recent message changes.
+   - Detect newly received messages only.
+   - Fetch message metadata: sender, subject, snippet, date, message id, thread id.
+   - Save new email notification in the database.
+   - Gmail watch subscriptions expire, so implement a scheduled renewal job for every connected Gmail account.
+
+8. Outlook/Microsoft integration:
+   - Implement Microsoft OAuth flow using Microsoft identity platform.
+   - Use Microsoft Graph API to access mail.
+   - Create Microsoft Graph webhook subscriptions for new messages.
+   - Implement the webhook validation endpoint required by Microsoft Graph.
+   - Validate clientState on incoming notifications.
+   - When a notification arrives, fetch the new message details from Microsoft Graph.
+   - Save sender, subject, preview, received time, message id, webLink, and account id.
+   - Microsoft Graph subscriptions expire, so implement a scheduled renewal job for every connected Outlook account.
+
+9. Database schema:
+Create tables for:
+   - users
+   - connected_email_accounts
+   - oauth_tokens
+   - email_notifications
+   - push_subscriptions
+   - provider_webhook_subscriptions
+   - notification_events / audit logs
+
+connected_email_accounts fields:
+   - id
+   - user_id
+   - provider: gmail | outlook
+   - email_address
+   - display_name
+   - provider_account_id
+   - status
+   - last_sync_at
+   - created_at
+   - updated_at
+
+email_notifications fields:
+   - id
+   - user_id
+   - connected_account_id
+   - provider
+   - provider_message_id
+   - provider_thread_id
+   - sender_name
+   - sender_email
+   - subject
+   - snippet
+   - received_at
+   - provider_web_link
+   - is_seen
+   - is_read_in_provider if available
+   - created_at
+
+push_subscriptions fields:
+   - id
+   - user_id
+   - endpoint
+   - p256dh
+   - auth
+   - user_agent
+   - created_at
+   - last_used_at
+
+10. Security:
+   - Use HTTPS-compatible callback URLs.
+   - Store tokens securely.
+   - Refresh access tokens server-side only.
+   - Validate webhook signatures or verification tokens where applicable.
+   - Validate Microsoft Graph clientState.
+   - Never send sensitive tokens to the frontend.
+   - Add rate limiting for webhook endpoints.
+   - Add logging without exposing secrets.
+   - Add error handling for expired/revoked accounts.
+
+11. UI requirements:
+   - Clean, modern, mobile-first design.
+   - Left sidebar on desktop, bottom navigation on mobile.
+   - Main sections:
+     - Dashboard
+     - Email Notifications
+     - Connected Accounts
+     - Settings
+   - Red notification badges must be very visible.
+   - When a new email arrives, show:
+     - red badge on global notification icon
+     - red badge next to the relevant email account
+     - real-time toast notification inside the app
+     - browser/mobile push notification if permission is granted
+
+12. Settings:
+   - Toggle push notifications on/off.
+   - Button to test push notification.
+   - Button to reconnect account if token expires.
+   - Button to disconnect Gmail/Outlook account.
+   - Show last successful webhook event per account.
+
+13. Development mode:
+   - If real Gmail Pub/Sub or Microsoft Graph webhook setup is not available locally, create a mock/test webhook mode.
+   - Add buttons in development mode:
+     - “Simulate Gmail new email”
+     - “Simulate Outlook new email”
+   - These should create test notifications and trigger in-app and push notifications.
+
+14. Deliverables:
+   - Fully working Replit project.
+   - Clear README with setup instructions.
+   - Environment variable list.
+   - Google Cloud setup instructions for Gmail Pub/Sub.
+   - Microsoft Azure app registration setup instructions.
+   - PWA installation instructions.
+   - Push notification testing instructions.
+   - Webhook testing instructions.
+
+15. Important constraints:
+   - Do not use polling as the main notification system.
+   - Use provider push/webhook systems wherever possible.
+   - Polling can only be used as a fallback or recovery mechanism.
+   - Make the first version focused only on email notifications, but keep the architecture expandable for future life-management modules such as calendar, tasks, finance, documents, reminders, and personal CRM.
+
+Build the MVP first:
+Phase 1:
+- User login
+- Dashboard UI
+- Connected accounts UI
+- PWA setup
+- Push notification permission and test push
+- Mock Gmail/Outlook notification simulation
+
+Phase 2:
+- Real Gmail OAuth and Gmail API integration
+- Real Microsoft OAuth and Graph integration
+
+Phase 3:
+- Gmail Pub/Sub webhook
+- Microsoft Graph webhook
+- Real-time notification delivery
+
+Phase 4:
+- Polish UI, error handling, renewal jobs, and production readiness
+
+Start by creating the project structure, database schema, authentication flow, PWA setup, push notification system, and mock notification flow before implementing real provider APIs.
